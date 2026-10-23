@@ -1,0 +1,82 @@
+from __future__ import annotations
+
+import asyncio
+import logging
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
+from datetime import datetime
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import select
+
+from getter_api.content import library
+from getter_api.db import make_engine, make_sessionmaker, utcnow
+from getter_api.interview.engine import InterviewEngine
+from getter_api.interview.grading import Grader
+from getter_api.llm.config import load_llm_config
+from getter_api.llm.gateway import LLMGateway
+from getter_api.models import InterviewSession
+from getter_api.routes.sessions import router as sessions_router
+from getter_api.settings import Settings, get_settings
+
+log = logging.getLogger(__name__)
+
+
+def create_app(
+    settings: Settings | None = None,
+    gateway: LLMGateway | None = None,
+    clock: Callable[[], datetime] = utcnow,
+) -> FastAPI:
+    settings = settings or get_settings()
+    gateway = gateway or LLMGateway(load_llm_config(settings.llm_config or None))
+    content = library()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        engine = make_engine(settings.database_url)
+        app.state.sessionmaker = make_sessionmaker(engine)
+        recovery = asyncio.create_task(_resume_grading(app))
+        try:
+            yield
+        finally:
+            recovery.cancel()
+            await engine.dispose()
+
+    app = FastAPI(title="Getter API", version="0.1.0", lifespan=lifespan)
+    app.state.settings = settings
+    app.state.engine = InterviewEngine(gateway, content, settings, clock)
+    app.state.grader = Grader(gateway, content, settings)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["content-type", "x-dev-user-email", "authorization"],
+    )
+
+    @app.get("/health")
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    app.include_router(sessions_router)
+    return app
+
+
+async def _resume_grading(app: FastAPI) -> None:
+    """Grade sessions left in 'grading' by a restart, so none are stuck."""
+    try:
+        async with app.state.sessionmaker() as db:
+            ids = list(
+                await db.scalars(
+                    select(InterviewSession.id).where(InterviewSession.status == "grading")
+                )
+            )
+        for session_id in ids:
+            async with app.state.sessionmaker() as db:
+                session = await db.get(InterviewSession, session_id)
+                if session is not None and session.status == "grading":
+                    await app.state.grader.grade(db, session)
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        log.exception("resuming grading failed")

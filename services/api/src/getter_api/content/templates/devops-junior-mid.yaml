@@ -1,0 +1,108 @@
+id: devops-junior-mid
+version: 1
+title: DevOps and SRE practice interview
+rubric: devops-junior-mid
+levels: [junior, mid]
+intro: >-
+  Hi, I'm your practice interviewer for a DevOps and SRE role. We'll go
+  through four short sections: systems you have run, Linux troubleshooting,
+  containers and CI, and an incident. Say which commands you'd run and why,
+  the way you would in a real interview. Nothing here is shared with
+  companies.
+sections:
+  - id: past_work
+    title: Systems you have run
+    time_limit_minutes: 8
+    max_followups: 2
+    skills: [ownership_communication, infrastructure]
+    questions:
+      - id: past_system
+        prompt: >-
+          Tell me about a system you deployed or helped keep running. Where
+          did it run, how did code get to production, and what was the worst
+          problem you dealt with on it?
+        look_for:
+          - Concrete setup (cloud, servers, containers, pipeline)
+          - Their own part versus the team's
+          - What went wrong, what they did, and what changed afterwards
+  - id: linux
+    title: Linux troubleshooting
+    time_limit_minutes: 10
+    max_followups: 2
+    skills: [linux_networking]
+    questions:
+      - id: port_443
+        prompt: |-
+          A web server on a Linux VM stopped answering on port 443 from the
+          internet. On the box itself:
+
+          ```
+          $ systemctl status nginx
+          ● nginx.service - A high performance web server
+               Active: active (running) since Mon 09:12:04 IST
+          $ curl -sk -o /dev/null -w '%{http_code}' https://localhost
+          200
+          ```
+
+          From your laptop the connection times out. What do you check, in
+          order, and which commands do you run?
+        look_for:
+          - Checks the listening address (ss -tlnp), not just the process
+          - Checks host firewall (iptables, nftables, ufw) and cloud security group
+          - Separates DNS, network path and application with tools like dig, nc or curl
+      - id: disk_full
+        prompt: >-
+          `df -h` shows the root disk at 100%, but `du -sh /*` only adds up to
+          about 40% of it. What could explain the gap, and how do you free the
+          space safely?
+        look_for:
+          - Deleted files still held open by a process (lsof +L1)
+          - Restarting or signalling the process, or truncating instead of deleting logs
+          - Log rotation to stop it happening again
+  - id: containers_ci
+    title: Containers and CI
+    time_limit_minutes: 8
+    max_followups: 2
+    skills: [containers_ci]
+    questions:
+      - id: dockerfile_review
+        prompt: |-
+          Review this Dockerfile for a Node.js API. What would you change and
+          why?
+
+          ```dockerfile
+          FROM node:latest
+          COPY . /app
+          WORKDIR /app
+          RUN npm install
+          EXPOSE 3000
+          CMD ["npm", "start"]
+          ```
+        look_for:
+          - Pin the base image version; prefer a slim image
+          - Copy package files and install before copying the source, for layer caching
+          - npm ci, production dependencies only, .dockerignore
+          - Run as a non-root user; multi-stage build
+  - id: incident
+    title: An incident
+    time_limit_minutes: 8
+    max_followups: 2
+    skills: [incident_response, reliability_practices]
+    questions:
+      - id: pool_exhausted
+        prompt: |-
+          A deploy went out at 14:02. By 14:05 the error rate is 8% (normally
+          under 0.5%) and p99 latency is 4 seconds. The logs show:
+
+          ```
+          14:04:51 ERROR db: connection pool exhausted (max=10, waiting=37)
+          14:04:52 WARN  http: GET /orders 503 4012ms
+          14:04:52 ERROR db: connection pool exhausted (max=10, waiting=41)
+          ```
+
+          You are on call. What do you do in the first ten minutes, and how
+          do you find the root cause afterwards?
+        look_for:
+          - Mitigates first by rolling back the deploy, and communicates
+          - Links the deploy to the pool exhaustion (leaked connections, slower query, lower pool size)
+          - Uses metrics and the diff to confirm the cause; adds an alert or test so it doesn't recur

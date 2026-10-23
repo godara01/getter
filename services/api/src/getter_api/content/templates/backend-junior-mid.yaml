@@ -1,0 +1,90 @@
+id: backend-junior-mid
+version: 1
+title: Backend engineer practice interview
+rubric: backend-junior-mid
+levels: [junior, mid]
+intro: >-
+  Hi, I'm your practice interviewer for a backend engineer role. We'll go
+  through four short sections: your own past work, a small API and database
+  design, a debugging exercise, and a concurrency question. Answer in your own
+  words, the way you would in a real interview. Nothing here is shared with
+  companies.
+sections:
+  - id: past_work
+    title: Your past work
+    time_limit_minutes: 8
+    max_followups: 2
+    skills: [ownership_communication, reliability]
+    questions:
+      - id: past_work_service
+        prompt: >-
+          Walk me through a backend service or API you built or worked on
+          recently. What did it do, what exactly was your part, and what was
+          the hardest technical problem you hit?
+        look_for:
+          - Concrete technical detail, not a product pitch
+          - Clear split between their own work and the team's
+          - Why decisions were made and what they would do differently
+  - id: api_design
+    title: API and database design
+    time_limit_minutes: 10
+    max_followups: 2
+    skills: [api_design, data_modeling]
+    questions:
+      - id: url_shortener
+        prompt: >-
+          Design the API and the database tables for a small URL shortener used
+          inside one company. People can create a short link, open it to be
+          redirected, and see how many times it was clicked. Walk me through
+          the endpoints with their methods and status codes, and the tables
+          with their key columns and indexes.
+        look_for:
+          - Endpoints with correct methods and status codes (201, 301 or 302, 404, 409)
+          - Unique short code with an index, and how codes are generated
+          - How click counts are stored without slowing the redirect
+          - Validation of the target URL and handling duplicates
+  - id: debugging
+    title: Debugging
+    time_limit_minutes: 8
+    max_followups: 2
+    skills: [debugging, coding_fundamentals]
+    questions:
+      - id: mutable_default
+        prompt: |-
+          This Python helper is used by a web API. Users report that a
+          new post sometimes shows tags they never added. What is wrong, and
+          how would you fix it and make sure it doesn't come back?
+
+          ```python
+          def add_tag(post_id, tag, tags_by_post={}):
+              tags_by_post.setdefault(post_id, []).append(tag)
+              return tags_by_post[post_id]
+          ```
+        look_for:
+          - The default dict is created once and shared across calls
+          - Post ids that are reused or collide across requests show old tags
+          - Fix with None as the default, or real storage; add a regression test
+      - id: n_plus_one
+        prompt: >-
+          An endpoint that lists 50 orders with each customer's name takes
+          about 3 seconds. The logs show 51 SQL queries per request. What is
+          going on, and how do you fix it?
+        look_for:
+          - Names the N+1 query problem
+          - Fix with a join or eager loading, and checks the query plan or indexes
+          - Measures before and after
+  - id: concurrency
+    title: Correctness under load
+    time_limit_minutes: 8
+    max_followups: 2
+    skills: [reliability, data_modeling, coding_fundamentals]
+    questions:
+      - id: last_seat
+        prompt: >-
+          Two requests try to book the last seat on a bus at the same moment.
+          How do you make sure only one of them succeeds, and what does the
+          other user see?
+        look_for:
+          - Explains the race condition
+          - Uses a transaction with row locking, a conditional update or a unique constraint
+          - Returns a clear error (for example 409) and keeps the booking idempotent on retry

@@ -1,0 +1,54 @@
+# Example production routing. Copy it, fill in models and prices, and set
+# GETTER_LLM_CONFIG to its path. API keys are read from the environment
+# variables named in api_key_env; never put keys in this file.
+#
+# Model names and prices below are placeholders to show the shape. Pick the
+# real ones with the eval harness (`uv run python -m getter_api.evals`): the
+# cheapest model whose scores stay close to the expert-graded set wins, chosen
+# separately for live turns and for grading. Check each vendor's current
+# price page before relying on the cost numbers.
+usd_to_inr: 88.0
+providers:
+  openrouter:
+    kind: openai_compatible
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: OPENROUTER_API_KEY
+    supports_json_mode: true
+  openai:
+    kind: openai_compatible
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    supports_json_mode: true
+  gemini:
+    kind: openai_compatible
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    api_key_env: GEMINI_API_KEY
+    supports_json_mode: true
+  anthropic:
+    kind: anthropic
+    api_key_env: ANTHROPIC_API_KEY
+  local:
+    kind: openai_compatible
+    base_url: http://localhost:11434/v1   # Ollama or vLLM
+tasks:
+  interview_turn:
+    # Fast and cheap: one short reply per candidate answer.
+    models:
+      - {provider: gemini, model: CHEAP_FAST_MODEL, input_usd_per_mtok: 0.0, output_usd_per_mtok: 0.0}
+      - {provider: openrouter, model: FALLBACK_MODEL, input_usd_per_mtok: 0.0, output_usd_per_mtok: 0.0}
+    max_tokens: 400
+    temperature: 0.4
+  grading:
+    # Runs once per session after it ends; accuracy matters more than speed.
+    models:
+      - {provider: anthropic, model: STRONG_MODEL, input_usd_per_mtok: 0.0, output_usd_per_mtok: 0.0}
+      - {provider: openai, model: FALLBACK_STRONG_MODEL, input_usd_per_mtok: 0.0, output_usd_per_mtok: 0.0}
+    max_tokens: 4000
+    temperature: 0.0
+  grading_check:
+    # Independent second pass; a different vendor than `grading` catches
+    # one model's blind spots.
+    models:
+      - {provider: openai, model: SECOND_GRADER_MODEL, input_usd_per_mtok: 0.0, output_usd_per_mtok: 0.0}
+    max_tokens: 4000
+    temperature: 0.0

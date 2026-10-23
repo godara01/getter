@@ -1,0 +1,46 @@
+# SYNTHETIC: written to exercise the eval harness, not graded by an expert.
+id: synthetic-devops-junior-weak
+template: devops-junior-mid
+level: junior
+synthetic: true
+turns:
+  - speaker: interviewer
+    section: past_work
+    text: Tell me about a system you deployed or helped keep running.
+  - speaker: candidate
+    section: past_work
+    text: We had some servers on AWS and I helped with deployments sometimes.
+  - speaker: interviewer
+    section: linux
+    text: A web server stopped answering on port 443 from the internet. What do you check?
+  - speaker: candidate
+    section: linux
+    text: I would restart nginx and see if it works. Maybe reboot the server.
+  - speaker: interviewer
+    section: linux
+    text: df shows the disk at 100% but du only adds up to 40%. Why?
+  - speaker: candidate
+    section: linux
+    text: I am not sure. Maybe du is wrong, I would delete old logs in /var/log.
+  - speaker: interviewer
+    section: containers_ci
+    text: Review this Dockerfile.
+  - speaker: candidate
+    section: containers_ci
+    text: >-
+      It looks fine. Maybe use a smaller image like alpine so it builds faster.
+  - speaker: interviewer
+    section: incident
+    text: After a deploy the error rate is 8% and the pool is exhausted. What do you do?
+  - speaker: candidate
+    section: incident
+    text: >-
+      I would increase the max pool size to 50 so there are enough connections,
+      and then look at the logs.
+expert_scores:
+  linux_networking: 1
+  containers_ci: 1
+  incident_response: 1
+  infrastructure: 1
+  reliability_practices: 1
+  ownership_communication: 1

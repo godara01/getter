@@ -1,0 +1,70 @@
+# SYNTHETIC: written to exercise the eval harness, not graded by an expert.
+id: synthetic-backend-mid-strong
+template: backend-junior-mid
+level: mid
+synthetic: true
+turns:
+  - speaker: interviewer
+    section: past_work
+    text: Walk me through a backend service or API you built or worked on recently.
+  - speaker: candidate
+    section: past_work
+    text: >-
+      I owned the payments webhook service at my last job, a FastAPI app on
+      Postgres. I wrote the idempotency layer myself: each webhook has a provider
+      event id, we insert it into a processed_events table with a unique
+      constraint inside the same transaction as the ledger update, so retries
+      from the provider become no-ops. The hardest problem was out-of-order
+      events; we fixed it by storing a per-payment state machine and rejecting
+      transitions that go backwards. If I did it again I would add a dead letter
+      queue earlier instead of relying on logs.
+  - speaker: interviewer
+    section: api_design
+    text: Design the API and the database tables for a small URL shortener.
+  - speaker: candidate
+    section: api_design
+    text: >-
+      POST /links with the target URL returns 201 and the code; GET /{code}
+      returns 302 to the target or 404; GET /links/{code}/stats returns counts.
+      Table links(id, code unique, target_url, created_by, created_at) with a
+      unique index on code. Codes are random base62 of length 7, retry on unique
+      violation, which returns 409 only if a custom code is taken. Clicks go to a
+      separate clicks table or, better, an in-memory counter flushed in batches
+      so the redirect stays fast. I validate the URL scheme to block javascript:
+      links.
+  - speaker: interviewer
+    section: debugging
+    text: What is wrong with add_tag?
+  - speaker: candidate
+    section: debugging
+    text: >-
+      The default dict is evaluated once when the function is defined, so every
+      call without the argument shares the same dict across requests. Use None
+      as the default and create a new dict inside, and add a test that calls it
+      twice and checks the second result does not contain the first tag.
+  - speaker: interviewer
+    section: debugging
+    text: An endpoint makes 51 SQL queries. What is going on?
+  - speaker: candidate
+    section: debugging
+    text: >-
+      Classic N+1: one query for orders, then one per order for the customer.
+      Join customers in the first query or use selectinload, then check
+      EXPLAIN and the timing before and after.
+  - speaker: interviewer
+    section: concurrency
+    text: Two requests try to book the last seat at the same moment.
+  - speaker: candidate
+    section: concurrency
+    text: >-
+      Do it in one statement: UPDATE seats SET booked_by = :user WHERE id = :id
+      AND booked_by IS NULL, and check the row count. Zero rows means someone
+      else won, so return 409 with a clear message. The client sends an
+      idempotency key so a retry of the winning request returns the same booking.
+expert_scores:
+  coding_fundamentals: 3
+  api_design: 3
+  data_modeling: 4
+  debugging: 3
+  reliability: 4
+  ownership_communication: 4
