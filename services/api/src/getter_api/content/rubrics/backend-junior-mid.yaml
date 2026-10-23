@@ -1,0 +1,63 @@
+# Backend engineer, junior to mid. Change only by pull request: every score
+# records the rubric id and version that produced it.
+id: backend-junior-mid
+version: 1
+role_family: backend
+title: Backend engineer (junior to mid)
+scale:
+  1: Not yet at junior level
+  2: Meets the junior bar
+  3: Meets the mid-level bar
+  4: Above mid level
+level_bars:
+  junior: 2
+  mid: 3
+skills:
+  - id: coding_fundamentals
+    name: Coding fundamentals
+    description: Data structures, complexity, language behaviour, writing correct code.
+    levels:
+      1: Misreads basic language behaviour; cannot reason about cost of an approach.
+      2: Explains common language pitfalls and picks reasonable data structures.
+      3: Reasons about complexity and edge cases unprompted; code is correct and idiomatic.
+      4: Weighs alternatives with clear trade-offs; anticipates failure modes.
+  - id: api_design
+    name: API design
+    description: Resource modelling, HTTP methods and status codes, errors, pagination, versioning.
+    levels:
+      1: Endpoints are ad hoc; status codes and errors are not considered.
+      2: Sensible REST endpoints and correct common status codes.
+      3: Handles errors, validation, pagination and idempotency; explains choices.
+      4: Designs for evolution (versioning, backwards compatibility) and abuse cases.
+  - id: data_modeling
+    name: Data modelling and databases
+    description: Schemas, keys, indexes, transactions, query cost.
+    levels:
+      1: Cannot turn requirements into tables.
+      2: Correct tables and keys for a small feature; knows what an index is for.
+      3: Chooses indexes and constraints deliberately; understands transactions and N+1 queries.
+      4: Reasons about isolation levels, locking and growth of the data.
+  - id: debugging
+    name: Debugging
+    description: Forming hypotheses, gathering evidence, narrowing down a cause.
+    levels:
+      1: Guesses at fixes without evidence.
+      2: Finds the cause of a clear bug with some guidance.
+      3: Systematic, reproduces the bug, isolates it and verifies the fix.
+      4: Also prevents recurrence (tests, monitoring) and explains root cause clearly.
+  - id: reliability
+    name: Reliability and testing
+    description: Error handling, concurrency, testing, logging and monitoring basics.
+    levels:
+      1: Does not consider failure, concurrency or tests.
+      2: Handles obvious errors; writes basic tests.
+      3: Handles concurrency and partial failure; knows what to log and monitor.
+      4: Designs for failure (retries, timeouts, idempotency) with evidence from real systems.
+  - id: ownership_communication
+    name: Ownership and communication
+    description: Depth on own past work, clarity, trade-offs, honesty about what they did.
+    levels:
+      1: Vague about own contribution; cannot explain decisions.
+      2: Explains what they built and their part in it.
+      3: Explains why decisions were made and what they would change.
+      4: Shows clear ownership of outcomes and teaches the listener something.

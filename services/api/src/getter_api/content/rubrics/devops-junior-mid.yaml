@@ -1,0 +1,62 @@
+# DevOps / SRE engineer, junior to mid. Change only by pull request.
+id: devops-junior-mid
+version: 1
+role_family: devops
+title: DevOps and SRE engineer (junior to mid)
+scale:
+  1: Not yet at junior level
+  2: Meets the junior bar
+  3: Meets the mid-level bar
+  4: Above mid level
+level_bars:
+  junior: 2
+  mid: 3
+skills:
+  - id: linux_networking
+    name: Linux and networking
+    description: Processes, files, permissions, systemd, DNS, ports, TLS, firewalls.
+    levels:
+      1: Unsure of basic commands or how a request reaches a server.
+      2: Uses common commands correctly and can check ports, processes and logs.
+      3: Troubleshoots layer by layer (DNS, network, firewall, process, app) with the right tools.
+      4: Explains kernel and network behaviour behind symptoms; fast and precise.
+  - id: containers_ci
+    name: Containers and CI/CD
+    description: Dockerfiles, image size and security, build caching, pipelines, deploys.
+    levels:
+      1: Cannot explain what a Dockerfile or pipeline step does.
+      2: Writes a working Dockerfile and a basic build-test-deploy pipeline.
+      3: Optimises caching and image size, avoids running as root, gates deploys on tests.
+      4: Designs safe rollouts (canary, rollback) and supply-chain controls.
+  - id: incident_response
+    name: Incident response
+    description: Reading logs and metrics, mitigating first, finding root cause.
+    levels:
+      1: Jumps to fixes without reading the evidence.
+      2: Reads logs and metrics to find an obvious cause.
+      3: Mitigates first (rollback), then finds root cause from correlated signals.
+      4: Runs the incident, including communication, follow-up actions and prevention.
+  - id: infrastructure
+    name: Infrastructure and cloud
+    description: Compute, networking, storage, infrastructure as code, capacity.
+    levels:
+      1: No working model of where the service runs.
+      2: Knows the main cloud building blocks and why infrastructure as code helps.
+      3: Designs a small production setup with sensible networking and state handling.
+      4: Plans capacity, cost and failure domains.
+  - id: reliability_practices
+    name: Monitoring and reliability practices
+    description: Metrics, alerts, SLOs, on-call hygiene, backups.
+    levels:
+      1: Does not consider monitoring or alerting.
+      2: Knows what to monitor for a web service.
+      3: Defines useful alerts and SLOs and avoids alert noise.
+      4: Uses error budgets and postmortems to drive improvements.
+  - id: ownership_communication
+    name: Ownership and communication
+    description: Depth on systems they ran, clarity, trade-offs, honesty about what they did.
+    levels:
+      1: Vague about own contribution; cannot explain decisions.
+      2: Explains what they ran and their part in it.
+      3: Explains why decisions were made and what they would change.
+      4: Shows clear ownership of outcomes and teaches the listener something.

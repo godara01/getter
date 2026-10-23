@@ -1,0 +1,25 @@
+# Default config: every task runs on the offline dev provider, so the whole
+# product works locally and in CI with no API keys and no cost. The dev
+# provider is NOT an AI: its questions are canned and its grades are a rough
+# heuristic. Point GETTER_LLM_CONFIG at a real config (see
+# llm.example.yaml) to use real models.
+usd_to_inr: 88.0
+providers:
+  dev:
+    kind: dev
+tasks:
+  interview_turn:
+    models:
+      - {provider: dev, model: dev-interviewer}
+    max_tokens: 400
+    temperature: 0.4
+  grading:
+    models:
+      - {provider: dev, model: dev-grader}
+    max_tokens: 4000
+    temperature: 0.0
+  grading_check:
+    models:
+      - {provider: dev, model: dev-grader}
+    max_tokens: 4000
+    temperature: 0.0
