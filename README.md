@@ -5,8 +5,11 @@ long interview loops. Phase 1 builds the candidate side: free AI practice
 interviews with honest, evidence-based feedback. Practice results are private
 to the candidate.
 
-Plans: [product plan](https://claude.ai/artifact/17PjzxH6wzBWE9FCVnp2XE) ·
-[technical plan](https://claude.ai/artifact/4KbLJBThG1c2pbPHuLwZWi)
+Plans, goals and progress live in [docs/](docs/README.md):
+[goals and decisions](docs/goals-and-decisions.md) ·
+[roadmap](docs/roadmap.md) · [product plan](docs/product-plan.md) ·
+[technical plan](docs/technical-plan.md) ·
+[product critique](docs/product-critique.md)
 
 ## What works today
 
@@ -27,7 +30,7 @@ Plans: [product plan](https://claude.ai/artifact/17PjzxH6wzBWE9FCVnp2XE) ·
   transcripts, to pick the cheapest model that grades close enough.
 
 Not yet: real sign-in (a dev email header for now), voice, code sandbox,
-payments, deploys. See the technical plan for the order.
+payments, deploys. See the [roadmap](docs/roadmap.md) for the order.
 
 ## Layout
 
@@ -37,6 +40,7 @@ services/api      FastAPI service, interview engine, grader, LLM gateway
   src/getter_api/content   rubrics and interview templates (YAML, versioned)
   src/getter_api/llm       provider-neutral model gateway and adapters
   src/getter_api/evals     model comparison against expert grades
+docs              plans, goals, decisions and roadmap
 ```
 
 ## Run it locally
