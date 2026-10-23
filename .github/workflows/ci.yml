@@ -20,7 +20,7 @@ jobs:
           POSTGRES_DB: getter_test
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U getter" --health-interval 2s --health-retries 20
+          --health-cmd "pg_isready -U getter -d getter_test" --health-interval 2s --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -32,14 +32,15 @@ jobs:
       - run: uv run mypy
       - name: Tests on SQLite
         run: uv run pytest -q
-      - name: Tests on Postgres
-        run: uv run pytest -q
-        env:
-          GETTER_TEST_DATABASE_URL: postgresql+psycopg://getter:getter@localhost:5432/getter_test
+      # Runs first, while the database is still empty.
       - name: Migrations match the models
         run: uv run alembic upgrade head && uv run alembic check
         env:
           GETTER_DATABASE_URL: postgresql+psycopg://getter:getter@localhost:5432/getter_test
+      - name: Tests on Postgres
+        run: uv run pytest -q
+        env:
+          GETTER_TEST_DATABASE_URL: postgresql+psycopg://getter:getter@localhost:5432/getter_test
       - name: Evals harness runs
         run: uv run python -m getter_api.evals
 
