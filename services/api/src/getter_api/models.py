@@ -28,6 +28,7 @@ class TimestampMixin:
 class User(TimestampMixin, Base):
     __tablename__ = "users"
 
+    clerk_user_id: Mapped[str | None] = mapped_column(String(200), unique=True)
     email: Mapped[str] = mapped_column(String(320), unique=True)
     name: Mapped[str | None] = mapped_column(String(200))
     # candidate, company_member, reviewer, admin

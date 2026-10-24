@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ErrorNote } from "@/components/ErrorNote";
-import { ApiError, type Level, type TemplateSummary, api, getEmail, setEmail } from "@/lib/api";
+import { ApiError, type Level, type TemplateSummary, api, clerkEnabled, getEmail, setEmail } from "@/lib/api";
 
 export default function PracticePage() {
   const router = useRouter();
@@ -104,7 +104,7 @@ export default function PracticePage() {
         </div>
       </fieldset>
 
-      <div className="space-y-2">
+      {!clerkEnabled && <div className="space-y-2">
         <label htmlFor="email" className="block font-medium">
           Your email
         </label>
@@ -120,7 +120,7 @@ export default function PracticePage() {
         <p className="text-xs text-muted">
           Development sign-in: your email identifies your interviews on this test server.
         </p>
-      </div>
+      </div>}
 
       <label className="flex max-w-2xl items-start gap-3 text-sm">
         <input

@@ -20,8 +20,10 @@ what has been built so far is in [roadmap.md](roadmap.md).
 > - **Layout is smaller so far:** `apps/web` and `services/api` only.
 >   Migrations live in `services/api/migrations`, and rubrics and templates in
 >   `services/api/src/getter_api/content`, not in `infra/` and `packages/`.
-> - **Interviews are text only** for now. Voice, the code sandbox, Clerk,
->   Razorpay and deploys are not built yet.
+> - **Interviews are text only** for now. Voice, the code sandbox,
+>   Razorpay and deploys are not built yet. Clerk sign-in is implemented with
+>   `@clerk/clerk-react` for static export and PyJWT/JWKS verification in the API;
+>   local development still works without keys.
 > - **Model names** in the budget and AI sections are examples. No provider is
 >   chosen; the eval harness decides, per task, on cost and quality.
 
