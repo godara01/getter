@@ -17,7 +17,7 @@ updated 24 October 2026.
 
 ## Done
 
-Clerk accounts: cached JWT verification and static-site sign-in, tested with a local JWKS. PR link pending creation.
+Clerk accounts: cached JWT verification and static-site sign-in, tested with a local JWKS. [PR #3](https://github.com/godara01/getter/pull/3).
 
 **[PR #1](https://github.com/godara01/getter/pull/1), merged 23 October 2026:
 text practice interviews end to end.**
