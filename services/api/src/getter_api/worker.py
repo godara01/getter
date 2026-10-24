@@ -19,6 +19,7 @@ from getter_api.llm.config import load_llm_config
 from getter_api.llm.gateway import LLMGateway
 from getter_api.llm.types import AllModelsFailed
 from getter_api.models import InterviewSession
+from getter_api.monitoring import configure_logging, init_sentry, request_id_var
 from getter_api.settings import get_settings
 
 log = logging.getLogger(__name__)
@@ -26,6 +27,15 @@ MAX_TRIES = 3
 
 
 async def grade_session(ctx: dict[str, Any], session_id: str) -> None:
+    # Jobs get an id like requests do, so their log lines can be followed together.
+    token = request_id_var.set(f"job-{ctx.get('job_id', session_id)}")
+    try:
+        await _grade_session(ctx, session_id)
+    finally:
+        request_id_var.reset(token)
+
+
+async def _grade_session(ctx: dict[str, Any], session_id: str) -> None:
     async with ctx["sessionmaker"]() as db:
         session = await db.scalar(
             select(InterviewSession)
@@ -99,6 +109,8 @@ async def recover_grading(ctx: dict[str, Any]) -> None:
 
 async def startup(ctx: dict[str, Any]) -> None:
     settings = get_settings()
+    configure_logging(settings)
+    init_sentry(settings, "worker")
     engine = make_engine(settings.database_url)
     ctx["db_engine"] = engine
     ctx["sessionmaker"] = make_sessionmaker(engine)

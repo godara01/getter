@@ -19,6 +19,7 @@ from getter_api.interview.grading import Grader
 from getter_api.llm.config import load_llm_config
 from getter_api.llm.gateway import LLMGateway
 from getter_api.models import InterviewSession
+from getter_api.monitoring import RequestIdMiddleware, configure_logging, init_sentry
 from getter_api.routes.community import router as community_router
 from getter_api.routes.sessions import router as sessions_router
 from getter_api.settings import Settings, get_settings
@@ -32,6 +33,8 @@ def create_app(
     clock: Callable[[], datetime] = utcnow,
 ) -> FastAPI:
     settings = settings or get_settings()
+    configure_logging(settings)
+    init_sentry(settings, "api")
     gateway = gateway or LLMGateway(load_llm_config(settings.llm_config or None))
     content = library()
 
@@ -61,8 +64,11 @@ def create_app(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_methods=["GET", "POST", "DELETE"],
-        allow_headers=["content-type", "x-dev-user-email", "authorization"],
+        allow_headers=["content-type", "x-dev-user-email", "authorization", "x-request-id"],
+        expose_headers=["x-request-id"],
     )
+    # Added last so it is outermost and tags every response, CORS replies included.
+    app.add_middleware(RequestIdMiddleware)
 
     @app.get("/health")
     async def health() -> dict[str, str]:

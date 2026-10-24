@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ErrorNote } from "@/components/ErrorNote";
+import { track } from "@/lib/analytics";
 import { ApiError, type Level, type TemplateSummary, api, clerkEnabled, getEmail, setEmail } from "@/lib/api";
 
 export default function PracticePage() {
@@ -35,6 +36,7 @@ export default function PracticePage() {
       setEmail(email);
       await api.acceptTerms();
       const session = await api.start(templateId, level);
+      track("practice_started", { template_id: session.template_id, level: session.level });
       router.push(`/interview/?id=${session.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Try again.");

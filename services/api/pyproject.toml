@@ -17,6 +17,7 @@ dependencies = [
     "aiosqlite>=0.20",
     "arq>=0.28",
     "pyjwt[crypto]>=2.10",
+    "sentry-sdk>=2.20",
 ]
 
 [dependency-groups]

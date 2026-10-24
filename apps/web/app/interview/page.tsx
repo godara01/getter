@@ -7,6 +7,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ErrorNote } from "@/components/ErrorNote";
 import { RichText } from "@/components/RichText";
 import { useSessionId } from "@/components/useSessionId";
+import { track } from "@/lib/analytics";
 import { ApiError, type Session, api } from "@/lib/api";
 import { formatClock } from "@/lib/text";
 
@@ -22,7 +23,14 @@ function Interview() {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
 
+  const lastStatus = useRef<string | null>(null);
+
   const show = useCallback((s: Session) => {
+    // Count a completion only when this page saw the interview end.
+    if (lastStatus.current === "in_progress" && s.status !== "in_progress") {
+      track("interview_completed", { level: s.level });
+    }
+    lastStatus.current = s.status;
     setSession(s);
     setSecondsLeft(s.progress?.section_seconds_left ?? null);
   }, []);

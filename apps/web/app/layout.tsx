@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AuthProvider } from "@/components/AuthProvider";
+import { Monitoring } from "@/components/Monitoring";
 
 import "./globals.css";
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </nav>
         </header>
         <main className="mx-auto max-w-4xl px-4 py-8">{children}</main>
+        <Monitoring />
         </AuthProvider>
       </body>
     </html>

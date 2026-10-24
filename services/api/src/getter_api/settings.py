@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     # Empty keeps grading in-process for local use and tests.
     redis_url: str = ""
 
+    # Monitoring. An empty DSN keeps Sentry off; JSON logs suit the deployed server.
+    sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = Field(default=0.0, ge=0, le=1)
+    log_json: bool = False
+
     # Cost controls.
     free_sessions_per_day: int = Field(default=3, ge=1)
     free_account_cost_inr: float = Field(default=100, gt=0)
