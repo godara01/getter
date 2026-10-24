@@ -17,7 +17,7 @@ updated 24 October 2026.
 
 ## Done
 
-Cost caps: rolling account spend, global daily ceiling, retry times and cost warnings. PR link pending creation.
+Cost caps: rolling account spend, global daily ceiling, retry times and cost warnings. [PR #5](https://github.com/godara01/getter/pull/5).
 
 **[PR #1](https://github.com/godara01/getter/pull/1), merged 23 October 2026:
 text practice interviews end to end.**
