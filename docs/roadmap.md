@@ -18,6 +18,7 @@ updated 24 October 2026.
 ## Done
 
 Grading queue: arq/Redis, bounded retries, recovery and offline fallback. [PR #4](https://github.com/godara01/getter/pull/4).
+Clerk accounts: cached JWT verification and static-site sign-in, tested with a local JWKS. [PR #3](https://github.com/godara01/getter/pull/3).
 
 **[PR #1](https://github.com/godara01/getter/pull/1), merged 23 October 2026:
 text practice interviews end to end.**
@@ -64,7 +65,7 @@ These block real model choice and going live:
 
 Roughly in order; each is about one pull request.
 
-1. [ ] **Real accounts with Clerk.** Today sign-in is a dev email header that
+1. [x] **Real accounts with Clerk.** Today sign-in is a dev email header that
    is refused in staging and production.
 2. [ ] **Real model choice.** Run the eval harness across providers once keys
    and expert-graded transcripts exist; set the per-task models in config.
