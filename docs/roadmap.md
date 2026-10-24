@@ -17,7 +17,7 @@ updated 24 October 2026.
 
 ## Done
 
-Grading queue: arq/Redis, bounded retries, recovery and offline fallback. PR link pending creation.
+Grading queue: arq/Redis, bounded retries, recovery and offline fallback. [PR #4](https://github.com/godara01/getter/pull/4).
 
 **[PR #1](https://github.com/godara01/getter/pull/1), merged 23 October 2026:
 text practice interviews end to end.**
