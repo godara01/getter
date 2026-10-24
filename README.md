@@ -40,7 +40,11 @@ Plans, goals and progress live in [docs/](docs/README.md):
 - **Clerk accounts** with cached JWT verification, plus offline dev email sign-in.
 
 Not yet: voice, code sandbox,
-payments, deploys. See the [roadmap](docs/roadmap.md) for the order.
+payments. Staging deployment is prepared; see the [roadmap](docs/roadmap.md) for the order.
+
+- **Prepared staging deployment**: GHCR images, SSH/Compose with Caddy TLS,
+  managed Postgres migrations and Cloudflare Pages. Missing secrets skip
+  cleanly; see [deployment setup](docs/deploy.md).
 
 ## Layout
 
@@ -114,3 +118,7 @@ refused. Clerk subjects create candidate accounts on first use; default tokens
 do not include email, so the API stores an internal placeholder address and
 never links existing dev accounts by email. Configure Clerk's sign-up terms
 when preparing a deployed instance.
+
+Validate prepared deployment locally with
+`docker compose -f docker-compose.prod.yml config --quiet`.
+Account setup, GitHub secrets/variables and rollback are in [docs/deploy.md](docs/deploy.md).

@@ -87,3 +87,25 @@ async def test_global_midnight_and_average_warning(make_client, clock, caplog):
     clock.now = clock.now.replace(hour=0, minute=0) + timedelta(days=1)
     assert (await client.post("/sessions", headers=ALICE, json=body)).status_code == 201
     await client.aclose()
+
+
+async def test_real_model_call_keeps_account_attribution(make_client, clock):
+    client = await make_client(free_account_cost_inr=10, free_sessions_per_day=100)
+    session = await start(client)
+    await answer(client, session["id"], LONG_ANSWER)
+    async with client._transport.app.state.sessionmaker() as db:
+        user = await db.scalar(select(User).where(User.email == "alice@example.com"))
+        calls = list(
+            await db.scalars(select(LLMCall).where(LLMCall.session_id == uuid.UUID(session["id"])))
+        )
+        assert calls
+        assert all(call.user_id == user.id for call in calls)
+        # The offline model costs zero; simulate billing on a real recorded call.
+        calls[0].cost_inr = 10
+        calls[0].created_at = clock()
+        await db.commit()
+    await client.delete(f"/sessions/{session['id']}", headers=ALICE)
+    body = {"template_id": session["template_id"], "level": "junior", "accept_terms": True}
+    response = await client.post("/sessions", headers=ALICE, json=body)
+    assert response.status_code == 429
+    await client.aclose()

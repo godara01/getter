@@ -8,9 +8,9 @@ from datetime import datetime
 
 from arq import create_pool
 from arq.connections import RedisSettings
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from getter_api.content import library
 from getter_api.db import make_engine, make_sessionmaker, utcnow
@@ -66,6 +66,15 @@ def create_app(
 
     @app.get("/health")
     async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.get("/health/ready")
+    async def ready() -> dict[str, str]:
+        try:
+            async with app.state.sessionmaker() as db:
+                await db.execute(text("SELECT 1"))
+        except Exception as exc:
+            raise HTTPException(503, "database unavailable") from exc
         return {"status": "ok"}
 
     app.include_router(sessions_router)

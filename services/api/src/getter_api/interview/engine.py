@@ -57,6 +57,7 @@ def record_calls(
         db.add(
             LLMCall(
                 session_id=session.id if session else None,
+                user_id=session.user_id if session else None,
                 task=task,
                 provider=call.provider,
                 model=call.model,
