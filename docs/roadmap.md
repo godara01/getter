@@ -17,7 +17,7 @@ updated 24 October 2026.
 
 ## Done
 
-Landing page and waitlist, versioned draft consents with withdrawal, and audited views/deletion. PR link pending creation.
+Landing page and waitlist, versioned draft consents with withdrawal, and audited views/deletion. [PR #6](https://github.com/godara01/getter/pull/6).
 
 **[PR #1](https://github.com/godara01/getter/pull/1), merged 23 October 2026:
 text practice interviews end to end.**
