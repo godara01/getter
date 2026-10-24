@@ -17,7 +17,10 @@ class Settings(BaseSettings):
     llm_config: str = ""
     # "dev" trusts an X-Dev-User-Email header. Only for local use and tests;
     # real sign-in (Clerk) replaces it before anything is deployed.
-    auth_mode: Literal["dev"] = "dev"
+    auth_mode: Literal["dev", "clerk"] = "dev"
+    clerk_issuer: str = ""
+    clerk_jwks_url: str = ""
+    clerk_authorized_parties: list[str] = []
     cors_origins: list[str] = ["http://localhost:3000"]
 
     # Cost controls.
@@ -38,6 +41,10 @@ class Settings(BaseSettings):
     def _no_dev_auth_when_deployed(self) -> Settings:
         if self.auth_mode == "dev" and self.environment in ("staging", "production"):
             raise ValueError("dev auth must not run in staging or production")
+        if self.auth_mode == "clerk" and not (
+            self.clerk_issuer and self.clerk_jwks_url and self.clerk_authorized_parties
+        ):
+            raise ValueError("Clerk issuer, JWKS URL and authorized parties are required")
         return self
 
 

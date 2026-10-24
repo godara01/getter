@@ -31,7 +31,9 @@ Plans, goals and progress live in [docs/](docs/README.md):
 - **Eval harness** that scores any model config against expert-graded
   transcripts, to pick the cheapest model that grades close enough.
 
-Not yet: real sign-in (a dev email header for now), voice, code sandbox,
+- **Clerk accounts** with cached JWT verification, plus offline dev email sign-in.
+
+Not yet: voice, code sandbox,
 payments, deploys. See the [roadmap](docs/roadmap.md) for the order.
 
 ## Layout
@@ -83,3 +85,15 @@ Cost limits are configured with `GETTER_FREE_ACCOUNT_COST_INR` (default ₹100),
 `GETTER_FREE_COST_WINDOW_HOURS` (24), `GETTER_GLOBAL_DAILY_COST_INR` (₹300),
 and `GETTER_SESSION_COST_WARNING_INR` (₹50). The existing count limit is three
 starts in 24 hours. Offline model calls cost ₹0.
+
+## Clerk accounts
+
+Local use needs no account or key. To use Clerk, set
+`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` when building the static web app. Set
+`GETTER_AUTH_MODE=clerk`, `GETTER_CLERK_ISSUER`, `GETTER_CLERK_JWKS_URL` and
+`GETTER_CLERK_AUTHORIZED_PARTIES` (a JSON list of allowed web origins) on the API.
+See both `.env.example` files. In staging/production dev authentication is
+refused. Clerk subjects create candidate accounts on first use; default tokens
+do not include email, so the API stores an internal placeholder address and
+never links existing dev accounts by email. Configure Clerk's sign-up terms
+when preparing a deployed instance.
