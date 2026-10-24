@@ -1,0 +1,74 @@
+# Deploy from the server with scripts/deploy.sh IMAGE. No local Postgres.
+# Config validation works without secrets; starting requires .env.staging.
+x-app: &app
+  image: ${GETTER_IMAGE:-ghcr.io/godara01/getter-api:latest}
+  restart: unless-stopped
+  env_file:
+    - path: .env.staging
+      required: false
+  environment:
+    GETTER_ENVIRONMENT: staging
+    GETTER_AUTH_MODE: clerk
+    GETTER_REDIS_URL: redis://redis:6379/0
+  networks: [backend]
+  init: true
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+
+services:
+  api:
+    <<: *app
+    command: ["uvicorn", "getter_api.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "172.29.0.10"]
+    depends_on:
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 12
+      start_period: 10s
+
+  worker:
+    <<: *app
+    command: ["arq", "getter_api.worker.WorkerSettings"]
+    depends_on:
+      api: {condition: service_healthy}
+    stop_grace_period: 5m
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    networks: [backend]
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 12
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      GETTER_API_DOMAIN: ${GETTER_API_DOMAIN:-api.staging.invalid}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      backend:
+        ipv4_address: 172.29.0.10
+    depends_on:
+      api: {condition: service_healthy}
+
+networks:
+  backend:
+    ipam:
+      config: [{subnet: 172.29.0.0/24}]
+
+volumes:
+  redis_data:
+  caddy_data:
+  caddy_config:

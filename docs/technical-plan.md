@@ -21,7 +21,8 @@ what has been built so far is in [roadmap.md](roadmap.md).
 >   Migrations live in `services/api/migrations`, and rubrics and templates in
 >   `services/api/src/getter_api/content`, not in `infra/` and `packages/`.
 > - **Interviews are text only** for now. Voice, the code sandbox,
->   Razorpay and deploys are not built yet. Clerk sign-in is implemented with
+>   Razorpay is not built yet. Staging deployment files are prepared; owner
+>   accounts and secrets are still required (see deploy.md). Clerk sign-in is implemented with
 >   `@clerk/clerk-react` for static export and PyJWT/JWKS verification in the API;
 >   local development still works without keys.
 > - **Model names** in the budget and AI sections are examples. No provider is
@@ -121,6 +122,19 @@ getter/
 **Environments:** `local` (Docker Compose with Postgres, Redis and a local LiveKit server), `staging` (deployed from every merge to `master`, test data only), and `production` (deployed from tagged releases). Each environment has its own database, storage bucket, LiveKit project and API keys. Secrets live in the hosting platform's secret store, never in the repo.
 
 **Conventions:** typed everywhere (TypeScript strict, Pydantic models, mypy), database changes only through migrations, rubrics changed only by pull request so every score can be traced to the rubric version that produced it.
+
+## Prepared staging deploy (implemented)
+
+`docker-compose.prod.yml` runs API, an arq worker, Redis and Caddy on the
+existing small server; Postgres is managed Neon. Redis, the worker and Caddy
+are always-on processes on that server, with no additional paid service.
+Only 80/443 are exposed. Managed database TLS and Clerk auth are required.
+The queue PR must land before enabling the worker. The deployment workflow
+builds/pushes immutable GHCR images on master, then runs migrations over SSH,
+restarts, checks database readiness/TLS, and publishes the static export with
+Wrangler. Server and Pages steps skip with clear logs if secrets are missing.
+The owner must create accounts/DNS and set secrets before a live test;
+[deploy.md](deploy.md) gives the ordered setup and rollback procedure.
 
 ## Data model
 

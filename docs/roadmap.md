@@ -17,6 +17,8 @@ updated 24 October 2026.
 
 ## Done
 
+Prepared staging deployment: Compose/TLS, GHCR and SSH/Pages automation with secret-free skip paths, readiness and rollback docs. PR link pending creation.
+
 Clerk accounts: cached JWT verification and static-site sign-in, tested with a local JWKS. [PR #3](https://github.com/godara01/getter/pull/3).
 
 **[PR #1](https://github.com/godara01/getter/pull/1), merged 23 October 2026:
@@ -57,6 +59,11 @@ These block real model choice and going live:
 - [ ] Accounts for staging: domain and DNS, Cloudflare Pages linked to the
   repo, a small server in Mumbai or Bangalore, managed Postgres and a storage
   bucket, Clerk, Resend, Sentry and PostHog.
+- [ ] **Activate prepared staging** following [deploy.md](deploy.md): merge the
+  queue PR, create the server/Neon/Clerk/Pages accounts, point API DNS to the
+  server, verify its SSH host key, configure the documented repository secrets
+  and variables, and complete the first live TLS/login/interview smoke test.
+- [ ] **Legal review** before public launch; current terms are a clearly marked draft.
 - [ ] Later: a LiveKit Cloud project and speech-to-text and text-to-speech
   accounts, after the voice test.
 
@@ -68,7 +75,7 @@ Roughly in order; each is about one pull request.
    is refused in staging and production.
 2. [ ] **Real model choice.** Run the eval harness across providers once keys
    and expert-graded transcripts exist; set the per-task models in config.
-3. [ ] **Staging deploy.** Web on Cloudflare Pages, API on the small Mumbai
+3. [x] **Staging deploy, prepared.** Web on Cloudflare Pages, API on the small Mumbai
    server, managed Postgres, deployed from every merge to `master`.
 4. [ ] **Job queue for grading** (Redis and arq), so grading runs after the
    session instead of in the request.

@@ -1,0 +1,149 @@
+name: Staging deploy
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths:
+      - .github/workflows/deploy.yml
+      - docker-compose.prod.yml
+      - infra/**
+      - scripts/deploy.sh
+  workflow_dispatch:
+
+concurrency:
+  group: staging-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f docker-compose.prod.yml config --quiet
+      - run: bash -n scripts/deploy.sh
+
+  image:
+    needs: config
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: image
+        shell: bash
+        run: echo "tag=ghcr.io/${GITHUB_REPOSITORY,,}-api:sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - name: Sign in to GHCR
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build API image (publish only on master)
+        uses: docker/build-push-action@v6
+        with:
+          context: services/api
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
+          tags: ${{ steps.image.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  server:
+    needs: image
+    runs-on: ubuntu-latest
+    env:
+      SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+      SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+      SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+      STAGING_ENV: ${{ secrets.STAGING_ENV }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check server configuration
+        id: configured
+        shell: bash
+        run: |
+          ready=true
+          for name in SSH_HOST SSH_USER SSH_KEY SSH_KNOWN_HOSTS STAGING_ENV; do
+            if [ -z "${!name}" ]; then
+              echo "Skipping server deployment: $name is not configured."
+              ready=false
+            fi
+          done
+          if [ "$GITHUB_EVENT_NAME" = pull_request ] || [ "$GITHUB_REF" != refs/heads/master ]; then
+            echo 'Skipping server deployment: only master can deploy.'
+            ready=false
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+      - name: Copy configuration and deploy over SSH
+        if: steps.configured.outputs.ready == 'true'
+        env:
+          IMAGE: ${{ needs.image.outputs.image }}
+        shell: bash
+        run: |
+          umask 077
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/getter_deploy"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$STAGING_ENV" > "$RUNNER_TEMP/getter-staging.env"
+          target="$SSH_USER@$SSH_HOST"
+          options=(-i "$HOME/.ssh/getter_deploy" -o BatchMode=yes -o StrictHostKeyChecking=yes)
+          ssh "${options[@]}" "$target" 'mkdir -p getter-staging/infra getter-staging/scripts && chmod 700 getter-staging'
+          scp "${options[@]}" docker-compose.prod.yml "$target:getter-staging/"
+          scp "${options[@]}" infra/Caddyfile "$target:getter-staging/infra/"
+          scp "${options[@]}" scripts/deploy.sh "$target:getter-staging/scripts/"
+          scp "${options[@]}" "$RUNNER_TEMP/getter-staging.env" "$target:getter-staging/.env.staging"
+          ssh "${options[@]}" "$target" "cd getter-staging && chmod 600 .env.staging && bash scripts/deploy.sh '$IMAGE'"
+      - name: Remove runner credentials
+        if: always()
+        run: rm -f "$HOME/.ssh/getter_deploy" "$RUNNER_TEMP/getter-staging.env"
+
+  web:
+    needs: config
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+      NEXT_PUBLIC_API_URL: ${{ vars.STAGING_API_URL }}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.STAGING_CLERK_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Pages configuration
+        id: configured
+        shell: bash
+        run: |
+          ready=true
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID PAGES_PROJECT NEXT_PUBLIC_API_URL NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "Skipping Pages deployment: $name is not configured."
+              ready=false
+            fi
+          done
+          if [ "$GITHUB_EVENT_NAME" = pull_request ] || [ "$GITHUB_REF" != refs/heads/master ]; then
+            echo 'Skipping Pages deployment: only master can deploy.'
+            ready=false
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+      - uses: pnpm/action-setup@v4
+        if: steps.configured.outputs.ready == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.configured.outputs.ready == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+      - if: steps.configured.outputs.ready == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.configured.outputs.ready == 'true'
+        run: pnpm --filter @getter/web build
+      - name: Publish static export with Wrangler
+        if: steps.configured.outputs.ready == 'true'
+        run: pnpm dlx wrangler@4 pages deploy apps/web/out --project-name="$PAGES_PROJECT" --branch=master
