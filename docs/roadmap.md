@@ -17,7 +17,7 @@ updated 24 October 2026.
 
 ## Done
 
-Prepared staging deployment: Compose/TLS, GHCR and SSH/Pages automation with secret-free skip paths, readiness and rollback docs. PR link pending creation.
+Prepared staging deployment: Compose/TLS, GHCR and SSH/Pages automation with secret-free skip paths, readiness and rollback docs. [PR #7](https://github.com/godara01/getter/pull/7).
 
 Clerk accounts: cached JWT verification and static-site sign-in, tested with a local JWKS. [PR #3](https://github.com/godara01/getter/pull/3).
 
