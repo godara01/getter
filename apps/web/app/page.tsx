@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WaitlistForm } from "@/components/WaitlistForm";
 
 const POINTS = [
   {
@@ -45,6 +46,7 @@ export default function Home() {
           </div>
         ))}
       </section>
+      <WaitlistForm />
     </div>
   );
 }

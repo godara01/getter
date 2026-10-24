@@ -147,7 +147,25 @@ export async function request<T>(
   return { status: res.status, data: body as T };
 }
 
+export interface Consent {
+  id: string;
+  kind: string;
+  text_version: string;
+  granted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export const api = {
+  waitlist: async (email: string, role_interest: string) =>
+    (await request<{ message: string }>("/waitlist", {
+      method: "POST", body: JSON.stringify({ email, role_interest }),
+    })).data,
+  consents: async () => (await request<Consent[]>("/consents")).data,
+  withdrawConsent: async (id: string) => { await request(`/consents/${id}`, { method: "DELETE" }); },
+  acceptTerms: async () => (await request<Consent>("/account/terms", {
+    method: "POST", body: JSON.stringify({ accept_terms: true, text_version: "practice-terms-draft-v1" }),
+  })).data,
   templates: async () => (await request<TemplateSummary[]>("/templates")).data,
   sessions: async () => (await request<SessionListItem[]>("/sessions")).data,
   session: async (id: string) => (await request<Session>(`/sessions/${id}`)).data,

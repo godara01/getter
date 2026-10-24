@@ -26,6 +26,10 @@ Plans, goals and progress live in [docs/](docs/README.md):
   Adapters cover any OpenAI-compatible API (OpenAI, OpenRouter, Gemini, Groq,
   DeepSeek, Ollama, vLLM) and Anthropic. An offline dev model lets everything
   run with no keys.
+- **Waitlist and consent records**: email/role signup, draft terms acceptance,
+  private consent list and withdrawal, and audited report/score views and deletion.
+
+
 - **Free practice limits** by session count, rolling account spend and a global
   UTC daily budget. Running interviews always continue.
 - **Queued grading** with arq/Redis, three bounded attempts, and an in-process
@@ -90,6 +94,13 @@ cd apps/web && NEXT_PUBLIC_API_URL=http://localhost:8100 pnpm build && pnpm e2e
 
 CI runs all of these on every pull request, with the API tests on both SQLite
 and Postgres.
+
+The landing page waitlist sends no email. The API allows five validated
+submissions per IP per hour (`GETTER_WAITLIST_REQUESTS_PER_HOUR`). Terms are
+clearly marked **draft, pending legal review** at `/terms/`; accepting them
+records the text version at account registration and at each session start.
+`/consents/` lists and withdraws those records. Withdrawal does not delete
+interviews; use My interviews to erase transcripts and reports.
 
 Cost limits are configured with `GETTER_FREE_ACCOUNT_COST_INR` (default ₹100),
 `GETTER_FREE_COST_WINDOW_HOURS` (24), `GETTER_GLOBAL_DAILY_COST_INR` (₹300),
