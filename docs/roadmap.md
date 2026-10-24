@@ -19,6 +19,8 @@ updated 24 October 2026.
 
 Prepared staging deployment: Compose/TLS, GHCR and SSH/Pages automation with secret-free skip paths, readiness and rollback docs. [PR #7](https://github.com/godara01/getter/pull/7).
 
+Cost caps: rolling account spend, global daily ceiling, retry times and cost warnings. [PR #5](https://github.com/godara01/getter/pull/5).
+
 Grading queue: arq/Redis, bounded retries, recovery and offline fallback. [PR #4](https://github.com/godara01/getter/pull/4).
 Clerk accounts: cached JWT verification and static-site sign-in, tested with a local JWKS. [PR #3](https://github.com/godara01/getter/pull/3).
 
@@ -81,7 +83,7 @@ Roughly in order; each is about one pull request.
 4. [x] **Job queue for grading** (Redis and arq), so grading runs after the
    session instead of in the request.
 5. [ ] **Landing page and waitlist**, consent records and the audit log.
-6. [ ] **Free-session caps** using the per-session cost already tracked.
+6. [x] **Free-session caps** using the per-session cost already tracked.
 7. [ ] **Voice test**: a LiveKit room where the model holds a 5 minute spoken
    conversation; measure latency and cost per minute, then decide whether to
    keep LiveKit and which speech vendors to use.

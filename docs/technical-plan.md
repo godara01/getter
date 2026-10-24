@@ -217,7 +217,17 @@ Model names elsewhere in this section and in Budget fit are examples of one opti
 
 **Coding tasks.** The candidate codes in Monaco, and the code runs in an isolated sandbox with time and memory limits and no network access. The agent sees code snapshots and test results, not keystrokes.
 
-**Cost controls.** We log tokens, speech minutes and cost per session in `sessions`, cap free sessions per account, cap the length of each session, and alert when cost per session drifts. In phase 0 we measure the real cost of one 30 to 45 minute session; that number sets the free-tier limits and pricing.
+**Cost controls.** New free sessions are checked against three limits: three
+starts in a rolling 24 hours, ₹100 of recorded account model cost in a rolling
+24 hours, and ₹300 of global model cost since midnight UTC. All are settings;
+the account window is configurable. At or above a limit, admission returns 429
+with a retry time and Retry-After header. Running interviews continue. Costs
+include failed billable calls and retain account attribution after session
+deletion. Offline calls cost zero. Admission also logs a warning when the
+last day's average recorded model cost per remaining session exceeds ₹50
+(configurable); deleted sessions still count toward spend limits. These are
+limits on recorded spend, not reservations: concurrent ongoing sessions can
+finish above a ceiling. Measure real model cost before adjusting pricing.
 
 **Refusals and failures.** If the model declines, an API call fails or speech drops, the agent apologises, retries once, and otherwise ends the session cleanly and refunds the credit. A broken interview must never produce a score.
 
