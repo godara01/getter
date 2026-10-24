@@ -278,7 +278,7 @@ async def test_failed_grading_never_produces_a_score(make_client: Any) -> None:
         failed_calls = await db.scalar(
             select(func.count()).select_from(LLMCall).where(LLMCall.task == "grading")
         )
-    assert failed_calls == 2
+    assert failed_calls == 6  # Three bounded jobs, each with the gateway repair retry.
 
 
 async def test_interview_continues_when_interviewer_model_is_down(make_client: Any) -> None:

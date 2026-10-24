@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     clerk_authorized_parties: list[str] = []
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # Empty keeps grading in-process for local use and tests.
+    redis_url: str = ""
+
     # Cost controls.
     free_sessions_per_day: int = Field(default=3, ge=1)
     free_account_cost_inr: float = Field(default=100, gt=0)

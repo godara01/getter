@@ -19,11 +19,34 @@ services:
     build: services/api
     environment:
       GETTER_DATABASE_URL: postgresql+psycopg://getter:getter@postgres:5432/getter
+      GETTER_REDIS_URL: redis://redis:6379/0
       GETTER_CORS_ORIGINS: '["http://localhost:3000"]'
       # Set GETTER_LLM_CONFIG and provider keys to use real models.
     ports: ["8000:8000"]
     depends_on:
       postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["127.0.0.1:6379:6379"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      retries: 20
+
+  worker:
+    build: services/api
+    command: ["uv", "run", "arq", "getter_api.worker.WorkerSettings"]
+    environment:
+      GETTER_DATABASE_URL: postgresql+psycopg://getter:getter@postgres:5432/getter
+      GETTER_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      api: {condition: service_started}
+      redis: {condition: service_healthy}
 
 volumes:
   pgdata:
+  redisdata:
