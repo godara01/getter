@@ -196,6 +196,24 @@ calls remain recorded. Without Redis, local/test runs use in-process grading.
 Redis and one worker are additional always-on processes on the existing small
 server, not paid managed services. Compose starts them together.
 
+## Report email and usefulness rating (implemented)
+
+When grading completes, `getter_api.mail` sends the candidate one email with
+a link to `/report/?id=<session>` and nothing else: no scores, verdict or
+quotes. Resend is called over HTTP with httpx (free tier, no SDK); with
+`GETTER_RESEND_API_KEY` empty a log adapter is used, so local runs, tests and
+e2e send nothing. The email is skipped for deleted accounts, Clerk
+placeholder addresses, and users whose latest consent of any kind was
+withdrawn. A send failure is logged and never affects the saved report.
+Settings: `GETTER_RESEND_API_KEY`, `GETTER_MAIL_FROM` (verified domain),
+`GETTER_WEB_BASE_URL`.
+
+Candidates can rate a report 1 to 5 with an optional comment of up to 500
+characters. `PUT /sessions/{id}/report/rating` stores one row per report in
+`report_ratings` (sending again edits it); `GET` on the same path returns it
+or null. Only the session owner can use either; the row is deleted with the
+report.
+
 ## Key flows
 
 **Practice session (phase 1, browser only):**

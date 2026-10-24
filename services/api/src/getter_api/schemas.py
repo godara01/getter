@@ -115,5 +115,15 @@ class ReportOut(BaseModel):
     created_at: datetime
 
 
+class RatingIn(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    comment: str | None = Field(default=None, max_length=500)
+
+
+class RatingOut(BaseModel):
+    rating: int
+    comment: str | None
+
+
 class ReportPending(BaseModel):
     status: str
