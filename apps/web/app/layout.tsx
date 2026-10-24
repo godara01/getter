@@ -22,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/practice/" className="hover:text-fg">
                 Practice
               </Link>
+              <Link href="/consents/" className="hover:text-fg">My consents</Link>
               <Link href="/sessions/" className="hover:text-fg">
                 My interviews
               </Link>

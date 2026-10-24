@@ -185,3 +185,16 @@ class AuditLog(TimestampMixin, Base):
     target_type: Mapped[str] = mapped_column(String(64))
     target_id: Mapped[str] = mapped_column(String(64))
     details: Mapped[dict[str, Any]] = mapped_column(default=dict)
+
+
+class Waitlist(TimestampMixin, Base):
+    __tablename__ = "waitlist"
+
+    email: Mapped[str] = mapped_column(String(320), unique=True)
+    role_interest: Mapped[str] = mapped_column(String(32))
+
+
+class WaitlistAttempt(TimestampMixin, Base):
+    __tablename__ = "waitlist_attempts"
+
+    ip_hash: Mapped[str] = mapped_column(String(64), index=True)

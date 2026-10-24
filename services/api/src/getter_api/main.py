@@ -17,6 +17,7 @@ from getter_api.interview.grading import Grader
 from getter_api.llm.config import load_llm_config
 from getter_api.llm.gateway import LLMGateway
 from getter_api.models import InterviewSession
+from getter_api.routes.community import router as community_router
 from getter_api.routes.sessions import router as sessions_router
 from getter_api.settings import Settings, get_settings
 
@@ -59,6 +60,7 @@ def create_app(
         return {"status": "ok"}
 
     app.include_router(sessions_router)
+    app.include_router(community_router)
     return app
 
 

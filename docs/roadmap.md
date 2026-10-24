@@ -3,7 +3,7 @@
 Where the build stands and what comes next. The full phase plan and its gates
 are in [product-plan.md](product-plan.md#phased-roadmap) and the detailed work
 breakdown is in [technical-plan.md](technical-plan.md#work-breakdown). Last
-updated 23 October 2026.
+updated 24 October 2026.
 
 ## Phases at a glance
 
@@ -16,6 +16,8 @@ updated 23 October 2026.
 | 4. Revenue on both sides | Paid company plans with a replacement guarantee, paid candidate tiers, more roles, wrapper sold to companies | | Not started |
 
 ## Done
+
+Landing page and waitlist, versioned draft consents with withdrawal, and audited views/deletion. PR link pending creation.
 
 **[PR #1](https://github.com/godara01/getter/pull/1), merged 23 October 2026:
 text practice interviews end to end.**
@@ -70,7 +72,7 @@ Roughly in order; each is about one pull request.
    server, managed Postgres, deployed from every merge to `master`.
 4. [ ] **Job queue for grading** (Redis and arq), so grading runs after the
    session instead of in the request.
-5. [ ] **Landing page and waitlist**, consent records and the audit log.
+5. [x] **Landing page and waitlist**, consent records and the audit log.
 6. [ ] **Free-session caps** using the per-session cost already tracked.
 7. [ ] **Voice test**: a LiveKit room where the model holds a 5 minute spoken
    conversation; measure latency and cost per minute, then decide whether to

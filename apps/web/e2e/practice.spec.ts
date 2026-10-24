@@ -8,6 +8,10 @@ const ANSWER =
 
 test("a candidate completes a practice interview and reads the report", async ({ page }) => {
   await page.goto("/");
+  await page.getByLabel("Email", { exact: true }).fill(`waitlist-${Date.now()}@example.com`);
+  await page.getByLabel("Role interest").selectOption("devops_sre");
+  await page.getByRole("button", { name: "Join waitlist" }).click();
+  await expect(page.getByRole("status")).toContainText("You're on the waitlist");
   await page.getByRole("link", { name: "Start a practice interview" }).click();
 
   await page.getByText("DevOps and SRE engineer (junior to mid)").click();
@@ -41,4 +45,8 @@ test("a candidate completes a practice interview and reads the report", async ({
 
   await page.getByRole("link", { name: "My interviews" }).click();
   await expect(page.getByText("DevOps and SRE practice interview (mid)")).toBeVisible();
+  await page.getByRole("link", { name: "My consents" }).click();
+  await expect(page.getByRole("listitem")).toHaveCount(2);
+  await page.getByRole("button", { name: "Withdraw" }).first().click();
+  await expect(page.getByText(/Withdrawn/)).toBeVisible();
 });

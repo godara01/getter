@@ -28,7 +28,8 @@ class Settings(BaseSettings):
     grading_consistency_check: bool = True
     consistency_flag_difference: int = 2
 
-    terms_version: str = "practice-terms-v1"
+    terms_version: str = "practice-terms-draft-v1"
+    waitlist_requests_per_hour: int = 5
 
     @model_validator(mode="after")
     def _no_dev_auth_when_deployed(self) -> Settings:
