@@ -29,7 +29,9 @@ Plans, goals and progress live in [docs/](docs/README.md):
 - **Eval harness** that scores any model config against expert-graded
   transcripts, to pick the cheapest model that grades close enough.
 
-Not yet: real sign-in (a dev email header for now), voice, code sandbox,
+- **Clerk accounts** with cached JWT verification, plus offline dev email sign-in.
+
+Not yet: voice, code sandbox,
 payments, deploys. See the [roadmap](docs/roadmap.md) for the order.
 
 ## Layout
@@ -76,3 +78,15 @@ cd apps/web && NEXT_PUBLIC_API_URL=http://localhost:8100 pnpm build && pnpm e2e
 
 CI runs all of these on every pull request, with the API tests on both SQLite
 and Postgres.
+
+## Clerk accounts
+
+Local use needs no account or key. To use Clerk, set
+`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` when building the static web app. Set
+`GETTER_AUTH_MODE=clerk`, `GETTER_CLERK_ISSUER`, `GETTER_CLERK_JWKS_URL` and
+`GETTER_CLERK_AUTHORIZED_PARTIES` (a JSON list of allowed web origins) on the API.
+See both `.env.example` files. In staging/production dev authentication is
+refused. Clerk subjects create candidate accounts on first use; default tokens
+do not include email, so the API stores an internal placeholder address and
+never links existing dev accounts by email. Configure Clerk's sign-up terms
+when preparing a deployed instance.

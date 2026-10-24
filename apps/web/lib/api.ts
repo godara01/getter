@@ -87,6 +87,13 @@ export class ApiError extends Error {
   }
 }
 
+export const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+let tokenGetter: (() => Promise<string | null>) | null = null;
+
+export function setTokenGetter(getter: (() => Promise<string | null>) | null): void {
+  tokenGetter = getter;
+}
+
 const EMAIL_KEY = "getter.email";
 
 export function apiBase(): string {
@@ -119,8 +126,11 @@ export async function request<T>(
   const email = opts.email === undefined ? getEmail() : opts.email;
   const headers = new Headers(init.headers);
   if (init.body) headers.set("content-type", "application/json");
-  // Development sign-in; replaced by real accounts before launch.
-  if (email) headers.set("x-dev-user-email", email);
+  headers.delete("x-dev-user-email");
+  if (clerkEnabled) {
+    const token = await tokenGetter?.();
+    if (token) headers.set("authorization", `Bearer ${token}`);
+  } else if (email) headers.set("x-dev-user-email", email);
   const res = await (opts.fetchImpl ?? fetch)(`${apiBase()}${path}`, { ...init, headers });
   if (res.status === 204) return { status: 204, data: undefined as T };
   const body = await res.json().catch(() => null);
