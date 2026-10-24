@@ -36,6 +36,7 @@ Getter's bar predicts job success.
 | Backend | Python, FastAPI, Postgres | 23 Oct 2026 |
 | Payments | Razorpay (UPI, cards, netbanking) | 23 Oct 2026 |
 | Voice | LiveKit kept in the plan, to be re-evaluated after a latency and cost test | 23 Oct 2026 |
+| Free practice limits | Admission uses recorded model spend: initially ₹100 per account over 24 hours and ₹300 globally per UTC day, alongside the session-count cap. Configurable operational defaults, not paid-tier pricing; running sessions continue | 24 Oct 2026 |
 | Budget | ₹5,000 to ₹10,000 a month at most; idle cost ₹500 to ₹700 a month; scale up only with real traffic | 23 Oct 2026 |
 | AI models | No lock-in to any one provider, Claude included. A provider-agnostic LLM layer; each task (interview turns, grading, checks) uses the best value-for-money model, chosen by evals | 23 Oct 2026 |
 | Grading rules | Every score quotes the candidate's own words; the verdict is computed in code; no emotion or personality inference; a failed grading produces no score | 23 Oct 2026 |
