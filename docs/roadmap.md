@@ -17,6 +17,8 @@ updated 24 October 2026.
 
 ## Done
 
+Second batch, open as pull requests: progress view across sessions ([#8](https://github.com/godara01/getter/pull/8)); admin tools for re-grading, deletion requests and audit log ([#9](https://github.com/godara01/getter/pull/9)); report-ready email and report usefulness rating ([#10](https://github.com/godara01/getter/pull/10)); Sentry and PostHog monitoring, inert without keys ([#11](https://github.com/godara01/getter/pull/11)); backend coding section with a sandboxed code runner, disabled by default ([#12](https://github.com/godara01/getter/pull/12)).
+
 Prepared staging deployment: Compose/TLS, GHCR and SSH/Pages automation with secret-free skip paths, readiness and rollback docs, plus account attribution for newly recorded model calls. [PR #7](https://github.com/godara01/getter/pull/7).
 
 Landing page and waitlist, versioned draft consents with withdrawal, and audited views/deletion. [PR #6](https://github.com/godara01/getter/pull/6).
@@ -70,6 +72,9 @@ These block real model choice and going live:
   server, verify its SSH host key, configure the documented repository secrets
   and variables, and complete the first live TLS/login/interview smoke test.
 - [ ] **Legal review** before public launch; current terms are a clearly marked draft.
+- [ ] **Resend key and a verified sender domain** to switch on report emails ([#10](https://github.com/godara01/getter/pull/10)).
+- [ ] **Sentry and PostHog projects and keys** to switch on monitoring ([#11](https://github.com/godara01/getter/pull/11)).
+- [ ] **Decide how production runs candidate code**: the Docker runner needs a Docker socket or a separate runner host, so production stays on the disabled runner until then ([#12](https://github.com/godara01/getter/pull/12)).
 - [ ] Later: a LiveKit Cloud project and speech-to-text and text-to-speech
   accounts, after the voice test.
 
@@ -90,8 +95,9 @@ Roughly in order; each is about one pull request.
 7. [ ] **Voice test**: a LiveKit room where the model holds a 5 minute spoken
    conversation; measure latency and cost per minute, then decide whether to
    keep LiveKit and which speech vendors to use.
-8. [ ] **Coding and DevOps sections**: Monaco editor and sandboxed runs for
-   backend, a browser terminal with scripted scenarios for DevOps.
+8. [ ] **Coding and DevOps sections**: backend coding section started in
+   [#12](https://github.com/godara01/getter/pull/12); a browser terminal with
+   scripted scenarios for DevOps is still to do.
 9. [ ] **Razorpay paid tier** for more sessions.
 10. [ ] **Privacy policy, terms and consent text**, version 1.
 
