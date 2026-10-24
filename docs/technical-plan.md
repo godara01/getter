@@ -147,6 +147,17 @@ Core tables, grouped by the phase that first needs them. Every table carries `id
 | `hire_outcomes` | Offer made, hired, 3, 6 and 12 month feedback | 3 |
 | `audit_log` | Who viewed or changed what, especially scores and certified profiles | 0 |
 
+## Grading worker (implemented)
+
+With `GETTER_REDIS_URL` set, session completion enqueues a unique arq job.
+Redis persistence and a minute-by-minute worker sweep recover missed enqueues;
+API startup also re-enqueues unfinished grading. The worker locks the session
+and skips any state other than `grading`, retries at most three times, and
+leaves exhausted grading as `failed` with no score. Failed billable model
+calls remain recorded. Without Redis, local/test runs use in-process grading.
+Redis and one worker are additional always-on processes on the existing small
+server, not paid managed services. Compose starts them together.
+
 ## Key flows
 
 **Practice session (phase 1, browser only):**
