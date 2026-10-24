@@ -167,6 +167,10 @@ class LLMCall(TimestampMixin, Base):
     session_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("sessions.id", ondelete="SET NULL"), index=True
     )
+    # Retain account attribution when a candidate deletes the transcript.
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
+    )
     task: Mapped[str] = mapped_column(String(64))
     provider: Mapped[str] = mapped_column(String(64))
     model: Mapped[str] = mapped_column(String(200))

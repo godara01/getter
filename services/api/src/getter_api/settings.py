@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,7 +21,11 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000"]
 
     # Cost controls.
-    free_sessions_per_day: int = 3
+    free_sessions_per_day: int = Field(default=3, ge=1)
+    free_account_cost_inr: float = Field(default=100, gt=0)
+    free_cost_window_hours: int = Field(default=24, ge=1)
+    global_daily_cost_inr: float = Field(default=300, gt=0)
+    session_cost_warning_inr: float = Field(default=50, gt=0)
     max_answer_chars: int = 4000
     max_candidate_turns: int = 30
     # A second, independent grading pass; disagreements flag the report.

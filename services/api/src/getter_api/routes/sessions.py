@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import uuid
-from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from getter_api.auth import current_user
+from getter_api.cost_controls import check_free_limits
 from getter_api.db import get_db
 from getter_api.interview.engine import InterviewEngine, InterviewError
 from getter_api.models import AuditLog, Consent, InterviewSession, User
@@ -127,18 +127,7 @@ async def create_session(
 ) -> SessionOut:
     if not body.accept_terms:
         raise HTTPException(422, "you need to accept the practice terms to start")
-    since = engine.clock() - timedelta(days=1)
-    recent = await db.scalar(
-        select(func.count())
-        .select_from(InterviewSession)
-        .where(InterviewSession.user_id == user.id, InterviewSession.created_at >= since)
-    )
-    if (recent or 0) >= engine.settings.free_sessions_per_day:
-        raise HTTPException(
-            429,
-            f"free practice is limited to {engine.settings.free_sessions_per_day} "
-            "interviews a day; please come back tomorrow",
-        )
+    await check_free_limits(db, user, engine.settings, engine.clock())
     try:
         session = engine.start(user, body.template_id, body.level)
     except InterviewError as exc:
