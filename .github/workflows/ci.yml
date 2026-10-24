@@ -12,6 +12,9 @@ jobs:
       run:
         working-directory: services/api
     services:
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
       postgres:
         image: postgres:16
         env:
@@ -32,6 +35,10 @@ jobs:
       - run: uv run mypy
       - name: Tests on SQLite
         run: uv run pytest -q
+      - name: Grading through real Redis and arq
+        run: uv run pytest -q tests/test_worker.py
+        env:
+          GETTER_TEST_REDIS_URL: redis://localhost:6379/15
       # Runs first, while the database is still empty.
       - name: Migrations match the models
         run: uv run alembic upgrade head && uv run alembic check

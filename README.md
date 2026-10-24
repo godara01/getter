@@ -28,6 +28,9 @@ Plans, goals and progress live in [docs/](docs/README.md):
   run with no keys.
 - **Waitlist and consent records**: email/role signup, draft terms acceptance,
   private consent list and withdrawal, and audited report/score views and deletion.
+
+- **Queued grading** with arq/Redis, three bounded attempts, and an in-process
+  fallback when `GETTER_REDIS_URL` is empty.
 - **Eval harness** that scores any model config against expert-graded
   transcripts, to pick the cheapest model that grades close enough.
 
@@ -63,7 +66,11 @@ pnpm install
 pnpm web:dev
 ```
 
-Or run Postgres and the API with `docker compose up --build`.
+Or run Postgres, Redis, the API and the grading worker with
+`docker compose up --build`. Redis and the worker run on the same server; no
+new paid service is required. For a standalone worker set `GETTER_REDIS_URL`
+and run `uv run arq getter_api.worker.WorkerSettings` from `services/api`.
+The API and worker must use the same database, model config and provider keys.
 
 To use real models, copy `services/api/src/getter_api/llm/llm.example.yaml`,
 fill in models and prices, set `GETTER_LLM_CONFIG` to its path and export the

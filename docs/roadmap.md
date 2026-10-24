@@ -19,6 +19,8 @@ updated 24 October 2026.
 
 Landing page and waitlist, versioned draft consents with withdrawal, and audited views/deletion. [PR #6](https://github.com/godara01/getter/pull/6).
 
+
+Grading queue: arq/Redis, bounded retries, recovery and offline fallback. [PR #4](https://github.com/godara01/getter/pull/4).
 Clerk accounts: cached JWT verification and static-site sign-in, tested with a local JWKS. [PR #3](https://github.com/godara01/getter/pull/3).
 
 **[PR #1](https://github.com/godara01/getter/pull/1), merged 23 October 2026:
@@ -72,7 +74,7 @@ Roughly in order; each is about one pull request.
    and expert-graded transcripts exist; set the per-task models in config.
 3. [ ] **Staging deploy.** Web on Cloudflare Pages, API on the small Mumbai
    server, managed Postgres, deployed from every merge to `master`.
-4. [ ] **Job queue for grading** (Redis and arq), so grading runs after the
+4. [x] **Job queue for grading** (Redis and arq), so grading runs after the
    session instead of in the request.
 5. [x] **Landing page and waitlist**, consent records and the audit log.
 6. [ ] **Free-session caps** using the per-session cost already tracked.

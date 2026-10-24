@@ -31,6 +31,7 @@ from getter_api.schemas import (
     TemplateOut,
     TurnOut,
 )
+from getter_api.worker import dispatch_grading
 
 router = APIRouter()
 
@@ -44,15 +45,6 @@ def engine_of(request: Request) -> InterviewEngine:
 
 
 Engine = Annotated[InterviewEngine, Depends(engine_of)]
-
-
-async def grade_in_background(request: Request, session_id: uuid.UUID) -> None:
-    """Grade after the response is sent. Moves to a job queue when traffic needs it."""
-    maker = request.app.state.sessionmaker
-    async with maker() as db:
-        session = await db.get(InterviewSession, session_id)
-        if session is not None and session.status == "grading":
-            await request.app.state.grader.grade(db, session)
 
 
 def session_out(engine: InterviewEngine, s: InterviewSession) -> SessionOut:
@@ -214,7 +206,7 @@ async def post_answer(
         await db.rollback()
         raise HTTPException(409, "another answer was saved at the same time; reload") from exc
     if session.status == "grading":
-        background.add_task(grade_in_background, request, session.id)
+        await dispatch_grading(request, background, session.id)
     return session_out(engine, session)
 
 
@@ -234,7 +226,7 @@ async def end_session(
         raise HTTPException(409, str(exc)) from exc
     await db.commit()
     if session.status == "grading":
-        background.add_task(grade_in_background, request, session.id)
+        await dispatch_grading(request, background, session.id)
     return session_out(engine, session)
 
 
