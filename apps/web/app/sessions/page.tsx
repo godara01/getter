@@ -32,7 +32,12 @@ export default function SessionsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">My interviews</h1>
+      <div className="flex items-baseline justify-between gap-3">
+        <h1 className="text-2xl font-semibold">My interviews</h1>
+        <Link href="/progress/" className="text-sm text-accent underline">
+          See my progress
+        </Link>
+      </div>
       <ErrorNote message={error} />
       {items === null && !error && <p className="text-muted">Loading…</p>}
       {items?.length === 0 && (
