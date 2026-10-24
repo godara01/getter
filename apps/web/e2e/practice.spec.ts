@@ -35,7 +35,11 @@ test("a candidate completes a practice interview and reads the report", async ({
     const before = await page.locator("li[data-speaker]").count();
     await page.getByLabel("Your answer").fill(ANSWER);
     await page.getByRole("button", { name: "Send answer" }).click();
-    await expect(page.locator("li[data-speaker]")).toHaveCount(before + 2);
+    // Offline grading can redirect before the final transcript update renders.
+    await expect.poll(async () =>
+      new URL(page.url()).pathname === "/report/" ||
+      (await page.locator("li[data-speaker]").count()) === before + 2,
+    ).toBe(true);
   }
 
   await expect(page).toHaveURL(/\/report\/\?id=/, { timeout: 30_000 });
