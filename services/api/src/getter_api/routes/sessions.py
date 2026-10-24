@@ -11,24 +11,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from getter_api.audit import audit
 from getter_api.auth import current_user
+from getter_api.code_runner import CodeRunner, format_result
 from getter_api.consents import accept_signup_terms
 from getter_api.cost_controls import check_free_limits
 from getter_api.db import get_db
-from getter_api.interview.engine import InterviewEngine, InterviewError
+from getter_api.interview.engine import InterviewEngine, InterviewError, RunLimitError
 from getter_api.models import Consent, InterviewSession, User
 from getter_api.schemas import (
     AnswerIn,
+    CodingOut,
     EvidenceOut,
     LearningItemOut,
     Progress,
     ReportOut,
     ReportPending,
+    RunIn,
+    RunOut,
+    RunResponse,
     SectionSummary,
     SessionCreate,
     SessionListItem,
     SessionOut,
     SkillScoreOut,
     TemplateOut,
+    TestResultOut,
     TurnOut,
 )
 from getter_api.worker import dispatch_grading
@@ -47,10 +53,29 @@ def engine_of(request: Request) -> InterviewEngine:
 Engine = Annotated[InterviewEngine, Depends(engine_of)]
 
 
+def runner_of(request: Request) -> CodeRunner:
+    runner: CodeRunner = request.app.state.runner
+    return runner
+
+
+Runner = Annotated[CodeRunner, Depends(runner_of)]
+
+
 def session_out(engine: InterviewEngine, s: InterviewSession) -> SessionOut:
     template = engine.template(s.template_id)
     progress = None
+    coding = None
     if s.status == "in_progress":
+        task = engine.position(s).question.coding
+        if task is not None:
+            coding = CodingOut(
+                language=task.language,
+                starter_code=task.starter_code,
+                test_names=[t.name for t in task.tests],
+                runner_enabled=engine.settings.code_runner != "disabled",
+                max_runs=engine.settings.code_max_runs,
+                runs_used=engine.run_count(s),
+            )
         progress = Progress(
             section_number=s.section_index + 1,
             section_count=len(template.sections),
@@ -66,6 +91,7 @@ def session_out(engine: InterviewEngine, s: InterviewSession) -> SessionOut:
         created_at=s.created_at,
         ended_at=s.ended_at,
         progress=progress,
+        coding=coding,
         turns=[
             TurnOut(
                 index=t.index,
@@ -197,6 +223,54 @@ async def post_answer(
     if session.status == "grading":
         await dispatch_grading(request, background, session.id)
     return session_out(engine, session)
+
+
+@router.post("/sessions/{session_id}/runs", response_model=RunResponse)
+async def run_code(
+    session_id: uuid.UUID,
+    body: RunIn,
+    db: DB,
+    user: CurrentUser,
+    engine: Engine,
+    runner: Runner,
+) -> RunResponse:
+    """Run code for the current coding question and save snapshot and result as turns.
+
+    The session row stays locked while the code runs, so runs never overlap.
+    """
+    session = await owned_session(db, user, session_id, for_update=True)
+    try:
+        task = engine.check_run_allowed(session, body.code)
+    except RunLimitError as exc:
+        raise HTTPException(429, str(exc)) from exc
+    except InterviewError as exc:
+        raise HTTPException(409 if "not in progress" in str(exc) else 422, str(exc)) from exc
+    result = await runner.run(task, body.code)
+    # With no runner nothing ran, so nothing is recorded and no run is used.
+    if result.status not in ("not_configured", "unavailable"):
+        engine.add_run_turns(
+            session,
+            body.code,
+            format_result(result, engine.run_count(session) + 1, engine.settings.code_max_runs),
+        )
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(409, "another change was saved at the same time; reload") from exc
+    return RunResponse(
+        result=RunOut(
+            status=result.status,
+            message=result.message,
+            tests=[
+                TestResultOut(name=t.name, passed=t.passed, detail=t.detail) for t in result.tests
+            ],
+            stdout=result.stdout[:2000],
+            stderr=result.stderr[-2000:],
+            duration_ms=result.duration_ms,
+        ),
+        session=session_out(engine, session),
+    )
 
 
 @router.post("/sessions/{session_id}/end", response_model=SessionOut)

@@ -53,6 +53,17 @@ class Progress(BaseModel):
     section_seconds_left: int | None
 
 
+class CodingOut(BaseModel):
+    """The coding task on the current question: what the editor shows."""
+
+    language: str
+    starter_code: str
+    test_names: list[str]
+    runner_enabled: bool
+    max_runs: int
+    runs_used: int
+
+
 class SessionOut(BaseModel):
     id: uuid.UUID
     template_id: str
@@ -62,7 +73,34 @@ class SessionOut(BaseModel):
     created_at: datetime
     ended_at: datetime | None
     progress: Progress | None
+    coding: CodingOut | None = None
     turns: list[TurnOut]
+
+
+class RunIn(BaseModel):
+    code: str = Field(min_length=1)
+
+
+class TestResultOut(BaseModel):
+    __test__ = False
+
+    name: str
+    passed: bool
+    detail: str
+
+
+class RunOut(BaseModel):
+    status: str
+    message: str
+    tests: list[TestResultOut]
+    stdout: str
+    stderr: str
+    duration_ms: int
+
+
+class RunResponse(BaseModel):
+    result: RunOut
+    session: SessionOut
 
 
 class SessionListItem(BaseModel):

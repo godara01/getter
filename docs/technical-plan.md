@@ -20,7 +20,7 @@ what has been built so far is in [roadmap.md](roadmap.md).
 > - **Layout is smaller so far:** `apps/web` and `services/api` only.
 >   Migrations live in `services/api/migrations`, and rubrics and templates in
 >   `services/api/src/getter_api/content`, not in `infra/` and `packages/`.
-> - **Interviews are text only** for now. Voice, the code sandbox,
+> - **Interviews are text only** for now (the backend template has a coding section). Voice,
 >   Razorpay is not built yet. Staging deployment files are prepared; owner
 >   accounts and secrets are still required (see deploy.md). Clerk sign-in is implemented with
 >   `@clerk/clerk-react` for static export and PyJWT/JWKS verification in the API;
@@ -135,6 +135,60 @@ restarts, checks database readiness/TLS, and publishes the static export with
 Wrangler. Server and Pages steps skip with clear logs if secrets are missing.
 The owner must create accounts/DNS and set secrets before a live test;
 [deploy.md](deploy.md) gives the ordered setup and rollback procedure.
+
+## Coding section (first slice, implemented)
+
+The backend template ends with a coding section. The task (prompt, starter
+code and visible test cases, each an expression plus its expected value) is
+versioned YAML under `content/templates`. The candidate edits code in Monaco,
+loaded lazily from a pinned CDN version only on that section (a plain textarea
+if it fails to load), and presses Run. `POST /sessions/{id}/runs` runs the code
+for the current coding question and saves two turns: the submitted code
+(`candidate`, kind `code`) and the result (`interviewer`, kind `run_result`).
+No new table or migration.
+
+- **Limits live in code.** The question must be a coding question, the section
+  time must not be up, code is capped in size (`GETTER_CODE_MAX_CHARS`) and
+  runs per interview (`GETTER_CODE_MAX_RUNS`, 429 when used up). The session row
+  is locked during a run, so runs never overlap. Code turns do not count toward
+  the answer limit.
+- **Grading.** A `code` turn is a candidate turn, so the grader can quote it
+  verbatim and the existing check (the quote must appear in that candidate turn)
+  is unchanged. `run_result` turns are shown to the grader as context but are
+  interviewer turns, so quoting them is rejected like any interviewer text. The
+  verdict is still computed in code and never from test results. Prompt version
+  bumped.
+- **Runner.** Behind a `CodeRunner` interface; `GETTER_CODE_RUNNER` selects
+  `disabled` (default: returns "not configured", records nothing, needs no
+  Docker, so local, CI and e2e are unchanged) or `docker`.
+- **Cost.** No new always-on process and no paid service. The Docker runner starts
+  one short-lived container per run on the existing server (Docker already runs
+  there for Compose), so cost is a few CPU seconds per run, capped by the run
+  limit. Pre-pull the image (`GETTER_CODE_RUNNER_IMAGE`, default
+  `python:3.12-slim`) so a run never waits on a download.
+
+**Security considerations.** Candidate code is untrusted.
+
+- Each run is `docker run --rm` with `--network none`, `--read-only` (plus an 8 MB
+  noexec tmpfs), non-root user 65534, `--cap-drop ALL`, `no-new-privileges`,
+  memory (swap disabled), CPU and process (`--pids-limit`) limits, a wall-clock
+  timeout that also kills the container, and a cap on output bytes. Code and
+  tests are mounted read-only; the container is not given the repository,
+  environment variables or secrets.
+- The API process needs access to the Docker socket to start containers; the
+  Compose files do not mount it, so production stays on `disabled` until the
+  owner decides how to provide it. That
+  access is root-equivalent on the host, so enable `docker` only on a server that
+  holds nothing but this app, and prefer rootless Docker or a socket proxy
+  that only allows `run` and `kill` before real traffic. Containers share the host
+  kernel; a kernel escape is not ruled out. gVisor or a separate runner host is
+  the next step if abuse appears. Python only for now.
+- Test results are produced inside the sandbox, so a candidate can forge them.
+  They are practice feedback; the grader reads the code and explanation.
+- Monaco comes from jsDelivr with a pinned version and no integrity hash; self-host
+  the files from Cloudflare Pages if that is not acceptable.
+- Not covered yet: per-user run rate limits beyond the per-interview run cap,
+  concurrent-run limits across sessions, hidden tests, other languages.
 
 ## Data model
 

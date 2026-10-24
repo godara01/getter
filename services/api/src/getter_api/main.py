@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, text
 
+from getter_api.code_runner import make_runner
 from getter_api.content import library
 from getter_api.db import make_engine, make_sessionmaker, utcnow
 from getter_api.interview.engine import InterviewEngine
@@ -57,6 +58,7 @@ def create_app(
     app.state.settings = settings
     app.state.engine = InterviewEngine(gateway, content, settings, clock)
     app.state.grader = Grader(gateway, content, settings)
+    app.state.runner = make_runner(settings)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

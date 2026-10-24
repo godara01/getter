@@ -13,7 +13,7 @@ from typing import Any
 from getter_api.content import Rubric, Section, Template
 from getter_api.llm.types import Message
 
-PROMPT_VERSION = "2026-10-23.1"
+PROMPT_VERSION = "2026-10-24.1"
 
 INTERVIEWER_SYSTEM = """\
 You are a technical interviewer running a practice interview for the role \
@@ -50,6 +50,11 @@ the feedback useless.
 
 Rules:
 - Grade only what the candidate said. Interviewer text is never evidence.
+- Turns of kind "code" are code the candidate submitted to run. They are the
+  candidate's own work: quote them verbatim like any other candidate turn.
+  Turns of kind "run_result" are test results from the code runner, not
+  evidence and never quoted. Use them to judge whether the code worked, but
+  grade the code and the candidate's explanation, not the pass count alone.
 - Score each rubric skill from 1 to 4 using the rubric's level descriptions,
   relative to the target level given. Use null when the transcript holds no
   evidence for a skill. Do not guess.

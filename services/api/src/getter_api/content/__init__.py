@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -45,10 +46,25 @@ class Rubric(BaseModel):
         return [s.id for s in self.skills]
 
 
+class CodingTest(BaseModel):
+    """A visible test: a Python expression run after the candidate's code, and its result."""
+
+    name: str
+    expression: str
+    expected: str  # a Python literal, compared with ast.literal_eval
+
+
+class CodingTask(BaseModel):
+    language: Literal["python"] = "python"
+    starter_code: str
+    tests: list[CodingTest] = Field(min_length=1)
+
+
 class Question(BaseModel):
     id: str
     prompt: str
     look_for: list[str] = Field(default_factory=list)
+    coding: CodingTask | None = None
 
 
 class Section(BaseModel):
@@ -77,6 +93,14 @@ class Template(BaseModel):
             raise ValueError(f"template {self.id}: duplicate section ids")
         if len(set(question_ids)) != len(question_ids):
             raise ValueError(f"template {self.id}: duplicate question ids")
+        for q in (q for s in self.sections for q in s.questions if q.coding):
+            assert q.coding is not None
+            for test in q.coding.tests:
+                try:
+                    ast.literal_eval(test.expected)
+                    ast.parse(test.expression, mode="eval")
+                except (ValueError, SyntaxError) as exc:
+                    raise ValueError(f"question {q.id}: bad test {test.name!r}: {exc}") from exc
         return self
 
     @property
