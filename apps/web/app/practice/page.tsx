@@ -33,6 +33,7 @@ export default function PracticePage() {
     setBusy(true);
     try {
       setEmail(email);
+      await api.acceptTerms();
       const session = await api.start(templateId, level);
       router.push(`/interview/?id=${session.id}`);
     } catch (err) {
@@ -129,9 +130,9 @@ export default function PracticePage() {
           className="mt-1"
         />
         <span>
-          I agree that Getter stores my answers and the AI feedback on them so I can see my
+          I accept the practice terms (draft, pending legal review). Getter stores my answers and the AI feedback on them so I can see my
           report. Practice interviews are private to me, are never shown to companies, and I can
-          delete them at any time.
+          delete them at any time. <a href="/terms/" target="_blank" rel="noreferrer" className="underline">Read draft terms</a>.
         </span>
       </label>
 

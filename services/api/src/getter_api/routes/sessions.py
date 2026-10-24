@@ -9,11 +9,13 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from getter_api.audit import audit
 from getter_api.auth import current_user
+from getter_api.consents import accept_signup_terms
 from getter_api.cost_controls import check_free_limits
 from getter_api.db import get_db
 from getter_api.interview.engine import InterviewEngine, InterviewError
-from getter_api.models import AuditLog, Consent, InterviewSession, User
+from getter_api.models import Consent, InterviewSession, User
 from getter_api.schemas import (
     AnswerIn,
     EvidenceOut,
@@ -124,6 +126,7 @@ async def create_session(
         session = engine.start(user, body.template_id, body.level)
     except InterviewError as exc:
         raise HTTPException(422, str(exc)) from exc
+    await accept_signup_terms(db, user, engine.settings.terms_version, engine.clock())
     db.add(
         Consent(
             user_id=user.id,
@@ -139,12 +142,17 @@ async def create_session(
 
 @router.get("/sessions", response_model=list[SessionListItem])
 async def list_sessions(db: DB, user: CurrentUser, engine: Engine) -> list[SessionListItem]:
-    rows = await db.scalars(
+    result = await db.scalars(
         select(InterviewSession)
         .where(InterviewSession.user_id == user.id)
         .order_by(InterviewSession.created_at.desc())
         .limit(100)
     )
+    rows = list(result)
+    for session in rows:
+        if session.report is not None:
+            audit(db, user, "score.view", "session", session.id)
+    await db.commit()
     return [
         SessionListItem(
             id=s.id,
@@ -226,6 +234,8 @@ async def get_report(
         # failed or abandoned: never show a score for a broken interview.
         raise HTTPException(409, f"no report: the interview is {session.status}")
 
+    audit(db, user, "report.view", "session", session.id)
+    await db.commit()
     template = engine.template(session.template_id)
     rubric = engine.content.rubric_for(template)
     r = session.report
@@ -277,14 +287,6 @@ async def delete_session(session_id: uuid.UUID, db: DB, user: CurrentUser) -> Re
     """Candidates can erase any of their sessions, transcript and report included."""
     session = await owned_session(db, user, session_id)
     await db.delete(session)
-    db.add(
-        AuditLog(
-            actor_user_id=user.id,
-            action="session.delete",
-            target_type="session",
-            target_id=str(session_id),
-            details={},
-        )
-    )
+    audit(db, user, "session.delete", "session", session_id)
     await db.commit()
     return Response(status_code=204)

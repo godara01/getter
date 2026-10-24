@@ -59,3 +59,22 @@ describe("request", () => {
     await expect(request("/x", {}, { email: null, fetchImpl })).rejects.toThrow("a; b");
   });
 });
+
+it("submits waitlist interest, explicitly accepts draft terms, and withdraws consent", async () => {
+  const { api } = await import("../lib/api");
+  const calls: { path: string; init?: RequestInit }[] = [];
+  vi.stubGlobal("fetch", async (path: string, init?: RequestInit) => {
+    calls.push({ path, init });
+    return path.endsWith("/consents/c1") ? new Response(null, { status: 204 }) : Response.json({ message: "saved" });
+  });
+  try {
+    await api.waitlist("a@example.com", "backend");
+    await api.acceptTerms();
+    await api.consents();
+    await api.withdrawConsent("c1");
+    expect(JSON.parse(calls[0].init?.body as string)).toEqual({ email: "a@example.com", role_interest: "backend" });
+    expect(JSON.parse(calls[1].init?.body as string)).toEqual({ accept_terms: true, text_version: "practice-terms-draft-v1" });
+    expect(calls[2].path).toMatch(/\/consents$/);
+    expect(calls[3].init?.method).toBe("DELETE");
+  } finally { vi.unstubAllGlobals(); }
+});

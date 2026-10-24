@@ -149,6 +149,28 @@ Core tables, grouped by the phase that first needs them. Every table carries `id
 | `hire_outcomes` | Offer made, hired, 3, 6 and 12 month feedback | 3 |
 | `audit_log` | Who viewed or changed what, especially scores and certified profiles | 0 |
 
+## Landing page, consent and audit records (implemented)
+
+The public waitlist stores normalized email and role interest with a unique
+email constraint. A persistent, hashed-IP attempt log limits validated requests
+to five per rolling hour, across API restarts. Old attempts are pruned on
+submission. Duplicate responses do not disclose whether an email already exists.
+No email service is used. Behind a proxy, configure uvicorn to trust forwarded
+headers only from that proxy; arbitrary X-Forwarded-For headers are ignored.
+
+Explicit draft terms acceptance creates an account consent through
+`POST /account/terms`; first practice admission also records it if absent.
+The existing session consent remains one record per start. Consent records
+carry text versions, acceptance time, and withdrawal status/time. Candidates
+can list and withdraw only their own records. Withdrawal preserves history;
+it does not erase interviews or terminate a running session. Starting again
+requires accepting terms again. The static terms page and API text version
+must be updated together when legally reviewed wording replaces the draft.
+
+Report views, score-bearing session list views and session deletion write
+minimal actor/action/target audit entries through one helper. Ownership is
+checked before logging; transcript/report deletion retains the audit record.
+
 ## Grading worker (implemented)
 
 With `GETTER_REDIS_URL` set, session completion enqueues a unique arq job.
