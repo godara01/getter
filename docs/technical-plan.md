@@ -129,7 +129,7 @@ getter/
 existing small server; Postgres is managed Neon. Redis, the worker and Caddy
 are always-on processes on that server, with no additional paid service.
 Only 80/443 are exposed. Managed database TLS and Clerk auth are required.
-The queue PR must land before enabling the worker. The deployment workflow
+The queue worker is implemented and merged. The deployment workflow
 builds/pushes immutable GHCR images on master, then runs migrations over SSH,
 restarts, checks database readiness/TLS, and publishes the static export with
 Wrangler. Server and Pages steps skip with clear logs if secrets are missing.
@@ -162,6 +162,17 @@ Core tables, grouped by the phase that first needs them. Every table carries `id
 | `introduction_requests` | Company asking to meet a certified candidate, candidate's answer | 3 |
 | `hire_outcomes` | Offer made, hired, 3, 6 and 12 month feedback | 3 |
 | `audit_log` | Who viewed or changed what, especially scores and certified profiles | 0 |
+
+## Grading worker (implemented)
+
+With `GETTER_REDIS_URL` set, session completion enqueues a unique arq job.
+Redis persistence and a minute-by-minute worker sweep recover missed enqueues;
+API startup also re-enqueues unfinished grading. The worker locks the session
+and skips any state other than `grading`, retries at most three times, and
+leaves exhausted grading as `failed` with no score. Failed billable model
+calls remain recorded. Without Redis, local/test runs use in-process grading.
+Redis and one worker are additional always-on processes on the existing small
+server, not paid managed services. Compose starts them together.
 
 ## Key flows
 

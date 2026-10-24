@@ -7,7 +7,8 @@ or publish production. Practice and legal copy remain subject to launch gates.
 
 ## One-time owner setup, in order
 
-1. Merge the Clerk and grading queue PRs before enabling deployment secrets.
+1. Clerk and the grading queue are merged. Before enabling deployment secrets,
+   check the remaining launch requirements below.
    The Compose worker runs `getter_api.worker.WorkerSettings`; the static web
    build needs Clerk support. Keep the remaining task PRs current with master,
    including Alembic merge revisions when independent migrations meet.

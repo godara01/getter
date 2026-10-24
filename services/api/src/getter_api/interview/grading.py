@@ -147,7 +147,9 @@ class Grader:
         record_calls(db, session, task, result.calls, ok=True)
         return result
 
-    async def grade(self, db: AsyncSession, session: InterviewSession) -> None:
+    async def grade(
+        self, db: AsyncSession, session: InterviewSession, *, retry_on_failure: bool = False
+    ) -> None:
         template = self.content.templates[session.template_id]
         rubric = self.content.rubric_for(template)
         if rubric.version != session.rubric_version:
@@ -162,6 +164,8 @@ class Grader:
         try:
             primary = await self._run(db, session, "grading", messages, validate)
         except AllModelsFailed as exc:
+            if retry_on_failure:
+                raise
             session.status = "failed"
             session.error = f"grading failed: {exc}"[:2000]
             await db.commit()

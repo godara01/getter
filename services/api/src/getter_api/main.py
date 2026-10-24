@@ -6,6 +6,8 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
 
+from arq import create_pool
+from arq.connections import RedisSettings
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, text
@@ -36,11 +38,18 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         engine = make_engine(settings.database_url)
         app.state.sessionmaker = make_sessionmaker(engine)
+        app.state.redis = (
+            await create_pool(RedisSettings.from_dsn(settings.redis_url))
+            if settings.redis_url
+            else None
+        )
         recovery = asyncio.create_task(_resume_grading(app))
         try:
             yield
         finally:
             recovery.cancel()
+            if app.state.redis is not None:
+                await app.state.redis.aclose()
             await engine.dispose()
 
     app = FastAPI(title="Getter API", version="0.1.0", lifespan=lifespan)
@@ -81,6 +90,11 @@ async def _resume_grading(app: FastAPI) -> None:
                 )
             )
         for session_id in ids:
+            if app.state.redis is not None:
+                await app.state.redis.enqueue_job(
+                    "grade_session", str(session_id), _job_id=f"grade:{session_id}"
+                )
+                continue
             async with app.state.sessionmaker() as db:
                 session = await db.get(InterviewSession, session_id)
                 if session is not None and session.status == "grading":
