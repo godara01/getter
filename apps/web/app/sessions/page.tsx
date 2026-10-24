@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ErrorNote } from "@/components/ErrorNote";
-import { ApiError, type SessionListItem, VERDICT_LABEL, api, getEmail } from "@/lib/api";
+import { ApiError, type SessionListItem, VERDICT_LABEL, api, clerkEnabled, getEmail } from "@/lib/api";
 
 export default function SessionsPage() {
   const [items, setItems] = useState<SessionListItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!getEmail()) {
+    if (!clerkEnabled && !getEmail()) {
       setItems([]);
       return;
     }
