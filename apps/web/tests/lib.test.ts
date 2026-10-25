@@ -78,3 +78,21 @@ it("submits waitlist interest, explicitly accepts draft terms, and withdraws con
     expect(calls[3].init?.method).toBe("DELETE");
   } finally { vi.unstubAllGlobals(); }
 });
+
+it("loads and saves the report rating, trimming an empty comment to null", async () => {
+  const { api } = await import("../lib/api");
+  const calls: { path: string; init?: RequestInit }[] = [];
+  vi.stubGlobal("fetch", async (path: string, init?: RequestInit) => {
+    calls.push({ path, init });
+    return init?.method === "PUT" ? Response.json({ rating: 4, comment: null }) : Response.json(null);
+  });
+  try {
+    expect(await api.rating("s1")).toBeNull();
+    expect(await api.rate("s1", 4, "   ")).toEqual({ rating: 4, comment: null });
+    expect(calls[0].path).toMatch(/\/sessions\/s1\/report\/rating$/);
+    expect(calls[1].init?.method).toBe("PUT");
+    expect(JSON.parse(calls[1].init?.body as string)).toEqual({ rating: 4, comment: null });
+    await api.rate("s1", 5, " clear ");
+    expect(JSON.parse(calls[2].init?.body as string)).toEqual({ rating: 5, comment: "clear" });
+  } finally { vi.unstubAllGlobals(); }
+});

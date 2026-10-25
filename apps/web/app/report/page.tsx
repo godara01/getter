@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 
 import { ErrorNote } from "@/components/ErrorNote";
+import { RatingWidget } from "@/components/RatingWidget";
 import { useSessionId } from "@/components/useSessionId";
 import { track } from "@/lib/analytics";
 import { ApiError, type Report, VERDICT_LABEL, api } from "@/lib/api";
@@ -141,6 +142,8 @@ function ReportView() {
           </ol>
         </section>
       )}
+
+      <RatingWidget sessionId={id} />
 
       <footer className="space-y-1 border-t border-line pt-4 text-xs text-muted">
         <p>
