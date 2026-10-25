@@ -196,6 +196,17 @@ calls remain recorded. Without Redis, local/test runs use in-process grading.
 Redis and one worker are additional always-on processes on the existing small
 server, not paid managed services. Compose starts them together.
 
+## Progress view (implemented)
+
+`GET /progress` returns the signed-in candidate's own score history, grouped by
+role template and level. Only `completed` sessions with a report count, so a
+failed, abandoned or unfinished interview never adds a point. Each skill lists
+its scores oldest first, plus the latest, the previous and the difference.
+Recurring gaps count in how many graded sessions a skill appeared in the
+learning plan (top five per role). Queries filter by the caller's user id, the
+view is written to the audit log, and nothing here is visible to companies.
+The `/progress` page draws each skill as an inline SVG line; no chart library.
+
 ## Key flows
 
 **Practice session (phase 1, browser only):**
@@ -318,7 +329,7 @@ Each item is sized to be roughly one pull request. Phases 2 to 4 get their own b
 - [ ] Coding section (Monaco editor, sandbox runs) and DevOps section (browser terminal, scripted scenarios first), with snapshots shared with the agent
 - [ ] Grading job: structured scores with evidence, consistency check, report and learning plan
 - [ ] Report page and email: scores, transcript moments, top gaps, learning plan
-- [ ] Progress view across sessions
+- [x] Progress view across sessions
 - [ ] Free-session caps and cost tracking per session
 - [ ] Eval harness: expert-graded transcripts, score comparison on every prompt or rubric change
 - [ ] Paid tier with Razorpay (UPI and cards): more sessions, deeper reports
