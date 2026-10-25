@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, text
 
+from getter_api.admin.routes import router as admin_router
 from getter_api.content import library
 from getter_api.db import make_engine, make_sessionmaker, utcnow
 from getter_api.interview.engine import InterviewEngine
@@ -81,6 +82,7 @@ def create_app(
     app.include_router(sessions_router)
     app.include_router(progress_router)
     app.include_router(community_router)
+    app.include_router(admin_router)
     return app
 
 
