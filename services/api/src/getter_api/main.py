@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, text
 
+from getter_api.admin.routes import router as admin_router
 from getter_api.content import library
 from getter_api.db import make_engine, make_sessionmaker, utcnow
 from getter_api.interview.engine import InterviewEngine
@@ -21,6 +22,7 @@ from getter_api.llm.gateway import LLMGateway
 from getter_api.models import InterviewSession
 from getter_api.monitoring import RequestIdMiddleware, configure_logging, init_sentry
 from getter_api.routes.community import router as community_router
+from getter_api.routes.progress import router as progress_router
 from getter_api.routes.sessions import router as sessions_router
 from getter_api.settings import Settings, get_settings
 
@@ -84,7 +86,9 @@ def create_app(
         return {"status": "ok"}
 
     app.include_router(sessions_router)
+    app.include_router(progress_router)
     app.include_router(community_router)
+    app.include_router(admin_router)
     return app
 
 

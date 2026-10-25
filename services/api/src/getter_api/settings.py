@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     clerk_issuer: str = ""
     clerk_jwks_url: str = ""
     clerk_authorized_parties: list[str] = []
+    # Admin access. Never self-assignable: only these settings or users.role in
+    # the database grant it. Emails are honoured in dev auth only, because Clerk
+    # sessions carry no verified email; use Clerk user ids there.
+    admin_emails: list[str] = []
+    admin_clerk_user_ids: list[str] = []
     cors_origins: list[str] = ["http://localhost:3000"]
 
     # Empty keeps grading in-process for local use and tests.
