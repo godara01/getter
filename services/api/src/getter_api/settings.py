@@ -54,6 +54,11 @@ class Settings(BaseSettings):
     code_cpus: float = Field(default=0.5, gt=0)
     code_output_limit_bytes: int = Field(default=16384, ge=256)
 
+    # Report-ready email. An empty key logs instead of sending.
+    resend_api_key: str = ""
+    mail_from: str = "Getter <reports@getter.invalid>"
+    web_base_url: str = "http://localhost:3000"
+
     terms_version: str = "practice-terms-draft-v1"
     waitlist_requests_per_hour: int = 5
 

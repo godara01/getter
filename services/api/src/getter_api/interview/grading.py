@@ -21,6 +21,7 @@ from getter_api.interview.prompts import PROMPT_VERSION, grader_messages
 from getter_api.interview.schemas import GradeOutput
 from getter_api.llm.gateway import LLMGateway, OutputInvalid, StructuredResult
 from getter_api.llm.types import AllModelsFailed, Message
+from getter_api.mail import Mailer, build_mailer, notify_report_ready
 from getter_api.models import FeedbackReport, InterviewSession, LearningItem, SkillScore
 from getter_api.settings import Settings
 
@@ -132,7 +133,14 @@ def grading_request(
 
 
 class Grader:
-    def __init__(self, gateway: LLMGateway, content: ContentLibrary, settings: Settings) -> None:
+    def __init__(
+        self,
+        gateway: LLMGateway,
+        content: ContentLibrary,
+        settings: Settings,
+        mailer: Mailer | None = None,
+    ) -> None:
+        self.mailer = mailer or build_mailer(settings)
         self.gateway = gateway
         self.content = content
         self.settings = settings
@@ -232,3 +240,5 @@ class Grader:
         db.add(report)
         session.status = "completed"
         await db.commit()
+        # Never fails grading: the report is already saved.
+        await notify_report_ready(db, self.mailer, self.settings, session)

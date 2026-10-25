@@ -16,13 +16,15 @@ from getter_api.consents import accept_signup_terms
 from getter_api.cost_controls import check_free_limits
 from getter_api.db import get_db
 from getter_api.interview.engine import InterviewEngine, InterviewError, RunLimitError
-from getter_api.models import Consent, InterviewSession, User
+from getter_api.models import Consent, FeedbackReport, InterviewSession, ReportRating, User
 from getter_api.schemas import (
     AnswerIn,
     CodingOut,
     EvidenceOut,
     LearningItemOut,
     Progress,
+    RatingIn,
+    RatingOut,
     ReportOut,
     ReportPending,
     RunIn,
@@ -354,6 +356,53 @@ async def get_report(
         rubric=f"{session.rubric_id}@{session.rubric_version}",
         created_at=r.created_at,
     )
+
+
+async def reported_session(db: AsyncSession, user: User, session_id: uuid.UUID) -> FeedbackReport:
+    session = await owned_session(db, user, session_id)
+    if session.report is None:
+        raise HTTPException(409, "there is no report to rate")
+    return session.report
+
+
+@router.get("/sessions/{session_id}/report/rating", response_model=RatingOut | None)
+async def get_rating(session_id: uuid.UUID, db: DB, user: CurrentUser) -> RatingOut | None:
+    report = await reported_session(db, user, session_id)
+    row = await db.scalar(select(ReportRating).where(ReportRating.report_id == report.id))
+    return RatingOut(rating=row.rating, comment=row.comment) if row else None
+
+
+@router.put("/sessions/{session_id}/report/rating", response_model=RatingOut)
+async def put_rating(
+    session_id: uuid.UUID, body: RatingIn, db: DB, user: CurrentUser, engine: Engine
+) -> RatingOut:
+    """One rating per report; sending it again replaces the earlier one."""
+    report = await reported_session(db, user, session_id)
+    comment = (body.comment or "").strip() or None
+    row = await db.scalar(select(ReportRating).where(ReportRating.report_id == report.id))
+    if row is None:
+        db.add(
+            ReportRating(
+                report_id=report.id, rating=body.rating, comment=comment, created_at=engine.clock()
+            )
+        )
+    else:
+        row.rating = body.rating
+        row.comment = comment
+        row.updated_at = engine.clock()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # A concurrent first rating won the race; apply ours on top of it.
+        await db.rollback()
+        row = await db.scalar(select(ReportRating).where(ReportRating.report_id == report.id))
+        if row is None:
+            raise
+        row.rating = body.rating
+        row.comment = comment
+        row.updated_at = engine.clock()
+        await db.commit()
+    return RatingOut(rating=body.rating, comment=comment)
 
 
 @router.delete("/sessions/{session_id}", status_code=204)
