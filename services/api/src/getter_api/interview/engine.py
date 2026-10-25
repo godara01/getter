@@ -14,7 +14,7 @@ from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from getter_api.content import ContentLibrary, Question, Rubric, Section, Template
+from getter_api.content import CodingTask, ContentLibrary, Question, Rubric, Section, Template
 from getter_api.db import as_utc, utcnow
 from getter_api.interview.prompts import PROMPT_VERSION, interviewer_messages
 from getter_api.interview.schemas import InterviewerDecision
@@ -35,6 +35,10 @@ SECTION_TIME_UP = "We're out of time for this section, so let's move on."
 
 class InterviewError(Exception):
     """A request the interview can't accept in its current state."""
+
+
+class RunLimitError(InterviewError):
+    """The candidate has used all their code runs for this interview."""
 
 
 @dataclass
@@ -204,6 +208,43 @@ class InterviewEngine:
         self._ask_current_question(session)
         return session
 
+    def run_count(self, session: InterviewSession) -> int:
+        return sum(1 for t in session.turns if t.kind == "code")
+
+    def check_run_allowed(self, session: InterviewSession, code: str) -> CodingTask:
+        """Limits for code runs, enforced here and not by the UI: the question must be a
+        coding question, section time must be left and the run budget not used up."""
+        if session.status != "in_progress":
+            raise InterviewError("this interview is not in progress")
+        task = self.position(session).question.coding
+        if task is None:
+            raise InterviewError("the current question has no code to run")
+        if not code.strip():
+            raise InterviewError("there is no code to run")
+        if len(code) > self.settings.code_max_chars:
+            raise InterviewError(f"code is longer than {self.settings.code_max_chars} characters")
+        if self.section_seconds_left(session) == 0:
+            raise InterviewError("time is up for this section; send your answer to move on")
+        if self.run_count(session) >= self.settings.code_max_runs:
+            raise RunLimitError(f"you have used all {self.settings.code_max_runs} runs")
+        return task
+
+    def add_run_turns(self, session: InterviewSession, code: str, result_text: str) -> None:
+        """Save the submitted code and its result, so the grader can quote the code."""
+        pos = self.position(session)
+        for speaker, kind, text in (
+            ("candidate", "code", code),
+            ("interviewer", "run_result", result_text),
+        ):
+            self._add_turn(
+                session,
+                speaker=speaker,
+                kind=kind,
+                text=text,
+                section_id=pos.section.id,
+                question_id=pos.question.id,
+            )
+
     async def answer(self, db: AsyncSession, session: InterviewSession, text: str) -> None:
         """Record the candidate's answer and add the interviewer's next turn."""
         if session.status != "in_progress":
@@ -226,7 +267,8 @@ class InterviewEngine:
             question_id=pos.question.id,
         )
 
-        answers = sum(1 for t in session.turns if t.speaker == "candidate")
+        # Code snapshots are candidate turns too, but only answers count toward the limit.
+        answers = sum(1 for t in session.turns if t.kind == "answer")
         if answers >= self.settings.max_candidate_turns:
             self._finish(session, "We've reached the length limit for this interview.")
             return

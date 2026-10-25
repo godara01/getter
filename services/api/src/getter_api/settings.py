@@ -48,6 +48,17 @@ class Settings(BaseSettings):
     grading_consistency_check: bool = True
     consistency_flag_difference: int = 2
 
+    # Coding section. "disabled" needs no Docker (local, CI, e2e); "docker" runs
+    # candidate code in a throwaway container with no network.
+    code_runner: Literal["disabled", "docker"] = "disabled"
+    code_runner_image: str = "python:3.12-slim"
+    code_max_runs: int = Field(default=10, ge=1)
+    code_max_chars: int = Field(default=8000, ge=1)
+    code_timeout_seconds: float = Field(default=5, gt=0)
+    code_memory_mb: int = Field(default=128, ge=16)
+    code_cpus: float = Field(default=0.5, gt=0)
+    code_output_limit_bytes: int = Field(default=16384, ge=256)
+
     # Report-ready email. An empty key logs instead of sending.
     resend_api_key: str = ""
     mail_from: str = "Getter <reports@getter.invalid>"

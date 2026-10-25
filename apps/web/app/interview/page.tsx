@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -12,6 +13,12 @@ import { ApiError, type Session, api } from "@/lib/api";
 import { formatClock } from "@/lib/text";
 
 const MAX_CHARS = 4000;
+
+// Loaded only when a coding question is on screen; other sections never fetch it.
+const CodingPanel = dynamic(() => import("@/components/CodingPanel"), {
+  ssr: false,
+  loading: () => <p className="text-sm text-muted">Loading the editor…</p>,
+});
 
 function Interview() {
   const id = useSessionId();
@@ -135,9 +142,23 @@ function Interview() {
             }
           >
             <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted">
-              {t.speaker === "candidate" ? "You" : "Interviewer"}
+              {t.kind === "code"
+                ? "Your code"
+                : t.kind === "run_result"
+                  ? "Test run"
+                  : t.speaker === "candidate"
+                    ? "You"
+                    : "Interviewer"}
             </p>
-            <RichText text={t.text} />
+            {t.kind === "code" ? (
+              <pre className="overflow-x-auto rounded-md border border-line bg-bg p-3 text-sm">
+                <code>{t.text}</code>
+              </pre>
+            ) : t.kind === "run_result" ? (
+              <pre className="overflow-x-auto whitespace-pre-wrap text-sm">{t.text}</pre>
+            ) : (
+              <RichText text={t.text} />
+            )}
           </li>
         ))}
       </ol>
@@ -147,6 +168,9 @@ function Interview() {
 
       {live ? (
         <div className="space-y-2">
+          {session.coding && (
+            <CodingPanel sessionId={session.id} coding={session.coding} onSession={show} />
+          )}
           <label htmlFor="answer" className="sr-only">
             Your answer
           </label>

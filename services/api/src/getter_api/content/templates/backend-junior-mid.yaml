@@ -1,12 +1,13 @@
 id: backend-junior-mid
-version: 1
+version: 2
 title: Backend engineer practice interview
 rubric: backend-junior-mid
 levels: [junior, mid]
 intro: >-
   Hi, I'm your practice interviewer for a backend engineer role. We'll go
-  through four short sections: your own past work, a small API and database
-  design, a debugging exercise, and a concurrency question. Answer in your own
+  through five short sections: your own past work, a small API and database
+  design, a debugging exercise, a concurrency question, and a short coding
+  task. Answer in your own
   words, the way you would in a real interview. Nothing here is shared with
   companies.
 sections:
@@ -88,3 +89,48 @@ sections:
           - Explains the race condition
           - Uses a transaction with row locking, a conditional update or a unique constraint
           - Returns a clear error (for example 409) and keeps the booking idempotent on retry
+  - id: coding
+    title: Coding task
+    time_limit_minutes: 12
+    max_followups: 1
+    skills: [coding_fundamentals, debugging]
+    questions:
+      - id: latest_per_user
+        prompt: >-
+          Complete `latest_per_user` in the editor. Each event is a tuple
+          `(user_id, timestamp, value)`, and events can arrive in any order.
+          Return a dict from each user id to the value of that user's newest
+          event (largest timestamp). If two events for a user have the same
+          timestamp, the one later in the list wins. Use Run to check your code
+          against the visible tests, then tell me how it works and what edge
+          cases you thought about.
+        look_for:
+          - Works on unsorted input and handles the empty list
+          - Handles equal timestamps as specified
+          - Simple linear approach, can state its time complexity
+          - Mentions edge cases beyond the visible tests (bad input, huge lists)
+        coding:
+          language: python
+          starter_code: |
+            def latest_per_user(events):
+                """events: list of (user_id, timestamp, value) tuples, any order.
+
+                Return {user_id: value of that user's newest event}.
+                """
+                pass
+          tests:
+            - name: empty list
+              expression: latest_per_user([])
+              expected: "{}"
+            - name: one user, in order
+              expression: 'latest_per_user([(1, 10, "a"), (1, 20, "b")])'
+              expected: '{1: "b"}'
+            - name: one user, out of order
+              expression: 'latest_per_user([(1, 20, "b"), (1, 10, "a")])'
+              expected: '{1: "b"}'
+            - name: two users
+              expression: 'latest_per_user([(1, 5, "a"), (2, 7, "x"), (1, 9, "c")])'
+              expected: '{1: "c", 2: "x"}'
+            - name: equal timestamps, later wins
+              expression: 'latest_per_user([(1, 5, "a"), (1, 5, "b")])'
+              expected: '{1: "b"}'

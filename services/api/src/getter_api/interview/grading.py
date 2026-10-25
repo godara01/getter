@@ -117,7 +117,13 @@ def grading_request(
 ) -> tuple[list[Message], Callable[[GradeOutput], None]]:
     """The grading prompt and its output validator; shared by the app and the evals."""
     transcript = [
-        {"turn": t.index, "speaker": t.speaker, "section": t.section_id, "text": t.text}
+        {
+            "turn": t.index,
+            "speaker": t.speaker,
+            "kind": t.kind,
+            "section": t.section_id,
+            "text": t.text,
+        }
         for t in turns
         if t.kind != "intro"
     ]

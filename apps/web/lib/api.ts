@@ -15,7 +15,7 @@ export interface TemplateSummary {
 export interface Turn {
   index: number;
   speaker: "interviewer" | "candidate";
-  kind: "intro" | "question" | "follow_up" | "answer" | "closing";
+  kind: "intro" | "question" | "follow_up" | "answer" | "closing" | "code" | "run_result";
   section_id: string | null;
   text: string;
   created_at: string;
@@ -37,7 +37,25 @@ export interface Session {
     section_title: string;
     section_seconds_left: number | null;
   } | null;
+  /** Set while the current question is a coding task. */
+  coding: {
+    language: string;
+    starter_code: string;
+    test_names: string[];
+    runner_enabled: boolean;
+    max_runs: number;
+    runs_used: number;
+  } | null;
   turns: Turn[];
+}
+
+export interface RunResult {
+  status: "ok" | "error" | "timeout" | "output_limit" | "not_configured" | "unavailable";
+  message: string;
+  tests: { name: string; passed: boolean; detail: string }[];
+  stdout: string;
+  stderr: string;
+  duration_ms: number;
 }
 
 export interface SessionListItem {
@@ -205,6 +223,13 @@ export const api = {
       await request<Session>(`/sessions/${id}/answers`, {
         method: "POST",
         body: JSON.stringify({ text }),
+      })
+    ).data,
+  run: async (id: string, code: string) =>
+    (
+      await request<{ result: RunResult; session: Session }>(`/sessions/${id}/runs`, {
+        method: "POST",
+        body: JSON.stringify({ code }),
       })
     ).data,
   end: async (id: string) =>
