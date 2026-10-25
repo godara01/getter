@@ -17,7 +17,7 @@ updated 25 October 2026.
 
 ## Done
 
-Third batch ([PR #13](https://github.com/godara01/getter/pull/13)), all behind config
+Third batch ([PR #14](https://github.com/godara01/getter/pull/14)), all behind config
 where a key or decision is needed:
 
 - **DevOps practice terminal**: scripted scenario engine (regex rules, flags,
@@ -115,12 +115,12 @@ Roughly in order; each is about one pull request.
    session instead of in the request.
 5. [x] **Landing page and waitlist**, consent records and the audit log.
 6. [x] **Free-session caps** using the per-session cost already tracked.
-7. [ ] **Voice test**: kit built ([PR #13](https://github.com/godara01/getter/pull/13));
+7. [ ] **Voice test**: kit built ([PR #14](https://github.com/godara01/getter/pull/14));
    the five minute call and the keep-or-drop LiveKit decision wait for LiveKit
    and speech vendor keys.
 8. [x] **Coding and DevOps sections**: backend coding section
    ([#12](https://github.com/godara01/getter/pull/12)) and the DevOps terminal
-   scenarios ([#13](https://github.com/godara01/getter/pull/13)). Running candidate
+   scenarios ([#14](https://github.com/godara01/getter/pull/14)). Running candidate
    code in production still needs a decision (see above).
 9. [x] **Razorpay paid tier**, built and inert until keys and prices are set.
 10. [x] **Privacy policy, terms and consent text**, version 1 drafts; legal review
