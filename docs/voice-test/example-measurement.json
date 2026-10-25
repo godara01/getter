@@ -1,0 +1,16 @@
+{
+  "label": "example only: not a real call",
+  "duration_minutes": 5,
+  "turns": [
+    {"endpointing_ms": 500, "stt_ms": 250, "llm_first_token_ms": 600, "tts_first_audio_ms": 250, "network_ms": 120},
+    {"endpointing_ms": 500, "stt_ms": 300, "llm_first_token_ms": 700, "tts_first_audio_ms": 280, "network_ms": 110},
+    {"endpointing_ms": 600, "stt_ms": 260, "llm_first_token_ms": 900, "tts_first_audio_ms": 240, "network_ms": 130}
+  ],
+  "usage": {"stt_audio_minutes": 2.5, "llm_input_tokens": 30000, "llm_output_tokens": 1500, "tts_characters": 3000},
+  "prices": {
+    "stt_inr_per_minute": 0.4,
+    "llm_inr_per_million_input": 100,
+    "llm_inr_per_million_output": 400,
+    "tts_inr_per_1k_characters": 6
+  }
+}

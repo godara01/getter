@@ -14,6 +14,7 @@ from getter_api.audit import audit
 from getter_api.db import utcnow
 from getter_api.models import AuditLog, Consent, InterviewSession, User, Waitlist
 from getter_api.routes.sessions import DB, CurrentUser
+from getter_api.voice.livekit_token import VoiceNotConfiguredError, mint_token, voice_enabled
 from getter_api.worker import dispatch_grading
 
 REGRADABLE = ("completed", "failed", "grading")
@@ -262,6 +263,32 @@ async def process_deletion(user_id: uuid.UUID, db: DB, admin: Admin) -> Deletion
         consents_deleted=counts["consents"],
         waitlist_deleted=counts["waitlist"],
     )
+
+
+class VoiceTokenIn(BaseModel):
+    room: str = "voice-test"
+
+
+class VoiceTokenOut(BaseModel):
+    url: str
+    room: str
+    identity: str
+    token: str
+
+
+@router.post("/voice/token", response_model=VoiceTokenOut)
+async def voice_token(body: VoiceTokenIn, request: Request, admin: Admin) -> VoiceTokenOut:
+    """A short-lived LiveKit token for the phase 0 voice test (see docs/voice-test.md)."""
+    settings = request.app.state.settings
+    if not voice_enabled(settings):
+        raise HTTPException(503, "LiveKit is not set up yet")
+    room = "".join(c for c in body.room if c.isalnum() or c in "-_")[:64] or "voice-test"
+    identity = f"admin-{admin.id.hex[:12]}"
+    try:
+        token = mint_token(settings, identity=identity, room=room)
+    except VoiceNotConfiguredError as exc:  # raced with a config change
+        raise HTTPException(503, "LiveKit is not set up yet") from exc
+    return VoiceTokenOut(url=settings.livekit_url, room=room, identity=identity, token=token)
 
 
 @router.get("/audit", response_model=list[AuditRow])

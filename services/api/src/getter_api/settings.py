@@ -84,6 +84,11 @@ class Settings(BaseSettings):
     razorpay_api_url: str = "https://api.razorpay.com/v1"
     credit_packs: list[CreditPack] = DEFAULT_PACKS
 
+    # LiveKit, for the voice test. Empty keeps the admin token endpoint off.
+    livekit_url: str = ""
+    livekit_api_key: str = ""
+    livekit_api_secret: str = ""
+
     # Report-ready email. An empty key logs instead of sending.
     resend_api_key: str = ""
     mail_from: str = "Getter <reports@getter.invalid>"
