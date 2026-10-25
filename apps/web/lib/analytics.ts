@@ -10,6 +10,7 @@ export interface EventMap {
   practice_started: { template_id: string; level: Level };
   interview_completed: { level: Level };
   report_viewed: { verdict: Verdict };
+  pack_purchased: { pack_id: string };
 }
 
 export type EventName = keyof EventMap;

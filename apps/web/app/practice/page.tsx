@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -16,6 +17,7 @@ export default function PracticePage() {
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limited, setLimited] = useState(false);
 
   useEffect(() => {
     setEmailField(getEmail() ?? "");
@@ -31,6 +33,7 @@ export default function PracticePage() {
   async function start(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setLimited(false);
     setBusy(true);
     try {
       setEmail(email);
@@ -40,6 +43,7 @@ export default function PracticePage() {
       router.push(`/interview/?id=${session.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Try again.");
+      setLimited(err instanceof ApiError && err.status === 429);
       setBusy(false);
     }
   }
@@ -139,6 +143,15 @@ export default function PracticePage() {
       </label>
 
       <ErrorNote message={error} />
+      {limited && (
+        <p className="text-sm">
+          Want to keep going now?{" "}
+          <Link href="/pricing/" className="font-medium text-accent underline">
+            See paid interview packs
+          </Link>
+          .
+        </p>
+      )}
 
       <button
         type="submit"

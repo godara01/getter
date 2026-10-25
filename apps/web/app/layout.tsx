@@ -29,6 +29,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/progress/" className="hover:text-fg">
                 Progress
               </Link>
+              <Link href="/pricing/" className="hover:text-fg">
+                Pricing
+              </Link>
               <Link href="/consents/" className="hover:text-fg">My consents</Link>
               <Link href="/sessions/" className="hover:text-fg">
                 My interviews

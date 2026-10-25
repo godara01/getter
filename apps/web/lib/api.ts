@@ -106,6 +106,27 @@ export interface Report {
   created_at: string;
 }
 
+export interface Billing {
+  enabled: boolean;
+  key_id: string;
+  credits: number;
+  packs: { id: string; title: string; credits: number; amount_inr: number }[];
+}
+
+export interface Order {
+  order_id: string;
+  amount_paise: number;
+  currency: string;
+  key_id: string;
+  pack_title: string;
+}
+
+export interface CheckoutResult {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
 export interface Rating {
   rating: number;
   comment: string | null;
@@ -247,6 +268,17 @@ export const api = {
       await request<{ output: string; session: Session }>(`/sessions/${id}/terminal`, {
         method: "POST",
         body: JSON.stringify({ command }),
+      })
+    ).data,
+  billing: async () => (await request<Billing>("/billing")).data,
+  createOrder: async (pack_id: string) =>
+    (await request<Order>("/billing/orders", { method: "POST", body: JSON.stringify({ pack_id }) }))
+      .data,
+  verifyPayment: async (result: CheckoutResult) =>
+    (
+      await request<{ credits: number; already_applied: boolean }>("/billing/verify", {
+        method: "POST",
+        body: JSON.stringify(result),
       })
     ).data,
   end: async (id: string) =>
