@@ -15,8 +15,9 @@ export interface TemplateSummary {
 export interface Turn {
   index: number;
   speaker: "interviewer" | "candidate";
-  kind: "intro" | "question" | "follow_up" | "answer" | "closing" | "code" | "run_result";
+  kind: "intro" | "question" | "follow_up" | "answer" | "closing" | "code" | "run_result" | "command" | "command_output";
   section_id: string | null;
+  question_id: string | null;
   text: string;
   created_at: string;
 }
@@ -45,6 +46,15 @@ export interface Session {
     runner_enabled: boolean;
     max_runs: number;
     runs_used: number;
+  } | null;
+  /** Set while the current question has a scripted terminal. */
+  terminal: {
+    question_id: string;
+    hostname: string;
+    user: string;
+    welcome: string;
+    max_commands: number;
+    commands_used: number;
   } | null;
   turns: Turn[];
 }
@@ -230,6 +240,13 @@ export const api = {
       await request<{ result: RunResult; session: Session }>(`/sessions/${id}/runs`, {
         method: "POST",
         body: JSON.stringify({ code }),
+      })
+    ).data,
+  command: async (id: string, command: string) =>
+    (
+      await request<{ output: string; session: Session }>(`/sessions/${id}/terminal`, {
+        method: "POST",
+        body: JSON.stringify({ command }),
       })
     ).data,
   end: async (id: string) =>
