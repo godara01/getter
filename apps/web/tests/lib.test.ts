@@ -73,7 +73,7 @@ it("submits waitlist interest, explicitly accepts draft terms, and withdraws con
     await api.consents();
     await api.withdrawConsent("c1");
     expect(JSON.parse(calls[0].init?.body as string)).toEqual({ email: "a@example.com", role_interest: "backend" });
-    expect(JSON.parse(calls[1].init?.body as string)).toEqual({ accept_terms: true, text_version: "practice-terms-draft-v1" });
+    expect(JSON.parse(calls[1].init?.body as string)).toEqual({ accept_terms: true, text_version: "practice-terms-draft-v2" });
     expect(calls[2].path).toMatch(/\/consents$/);
     expect(calls[3].init?.method).toBe("DELETE");
   } finally { vi.unstubAllGlobals(); }

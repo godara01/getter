@@ -1,5 +1,7 @@
 // Typed client for the Getter API. Types mirror services/api/src/getter_api/schemas.py.
 
+import { TERMS_VERSION } from "./legal";
+
 export type Level = "junior" | "mid";
 
 export interface TemplateSummary {
@@ -237,7 +239,7 @@ export const api = {
   consents: async () => (await request<Consent[]>("/consents")).data,
   withdrawConsent: async (id: string) => { await request(`/consents/${id}`, { method: "DELETE" }); },
   acceptTerms: async () => (await request<Consent>("/account/terms", {
-    method: "POST", body: JSON.stringify({ accept_terms: true, text_version: "practice-terms-draft-v1" }),
+    method: "POST", body: JSON.stringify({ accept_terms: true, text_version: TERMS_VERSION }),
   })).data,
   templates: async () => (await request<TemplateSummary[]>("/templates")).data,
   sessions: async () => (await request<SessionListItem[]>("/sessions")).data,
@@ -270,6 +272,8 @@ export const api = {
         body: JSON.stringify({ command }),
       })
     ).data,
+  /** Everything stored about the signed-in candidate, as the JSON the API returns. */
+  exportData: async () => (await request<unknown>("/account/export")).data,
   billing: async () => (await request<Billing>("/billing")).data,
   createOrder: async (pack_id: string) =>
     (await request<Order>("/billing/orders", { method: "POST", body: JSON.stringify({ pack_id }) }))

@@ -40,6 +40,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </nav>
         </header>
         <main className="mx-auto max-w-4xl px-4 py-8">{children}</main>
+        <footer className="mx-auto flex max-w-4xl gap-5 px-4 pb-8 text-sm text-muted">
+          <Link href="/terms/" className="hover:text-fg">
+            Terms
+          </Link>
+          <Link href="/privacy/" className="hover:text-fg">
+            Privacy
+          </Link>
+          <Link href="/pricing/" className="hover:text-fg">
+            Pricing
+          </Link>
+        </footer>
         <Monitoring />
         </AuthProvider>
       </body>

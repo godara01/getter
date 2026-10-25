@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     mail_from: str = "Getter <reports@getter.invalid>"
     web_base_url: str = "http://localhost:3000"
 
-    terms_version: str = "practice-terms-draft-v1"
+    terms_version: str = "practice-terms-draft-v2"
     waitlist_requests_per_hour: int = 5
 
     @model_validator(mode="after")
