@@ -174,7 +174,26 @@ export interface Consent {
   updated_at: string;
 }
 
+export interface ProgressData {
+  roles: {
+    template_id: string;
+    title: string;
+    level: Level;
+    sessions: number;
+    skills: {
+      skill_id: string;
+      name: string;
+      points: { session_id: string; date: string; score: number }[];
+      latest: number;
+      previous: number | null;
+      delta: number | null;
+    }[];
+    gaps: { skill_id: string; name: string; title: string; sessions: number }[];
+  }[];
+}
+
 export const api = {
+  progress: async () => (await request<ProgressData>("/progress")).data,
   waitlist: async (email: string, role_interest: string) =>
     (await request<{ message: string }>("/waitlist", {
       method: "POST", body: JSON.stringify({ email, role_interest }),
