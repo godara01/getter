@@ -42,6 +42,7 @@ class TurnOut(BaseModel):
     speaker: str
     kind: str
     section_id: str | None
+    question_id: str | None = None
     text: str
     created_at: datetime
 
@@ -64,6 +65,17 @@ class CodingOut(BaseModel):
     runs_used: int
 
 
+class TerminalOut(BaseModel):
+    """The scripted terminal on the current question."""
+
+    question_id: str
+    hostname: str
+    user: str
+    welcome: str
+    max_commands: int
+    commands_used: int
+
+
 class SessionOut(BaseModel):
     id: uuid.UUID
     template_id: str
@@ -74,7 +86,17 @@ class SessionOut(BaseModel):
     ended_at: datetime | None
     progress: Progress | None
     coding: CodingOut | None = None
+    terminal: TerminalOut | None = None
     turns: list[TurnOut]
+
+
+class CommandIn(BaseModel):
+    command: str = Field(min_length=1, max_length=400)
+
+
+class CommandResponse(BaseModel):
+    output: str
+    session: SessionOut
 
 
 class RunIn(BaseModel):

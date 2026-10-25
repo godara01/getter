@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -60,11 +61,49 @@ class CodingTask(BaseModel):
     tests: list[CodingTest] = Field(min_length=1)
 
 
+class TerminalRule(BaseModel):
+    """One scripted reply. The first rule whose pattern matches the whole command and whose
+    flag conditions hold wins; `sets` flags then change what later commands print."""
+
+    pattern: str  # regex, matched against the whole command with spaces collapsed
+    output: str = ""
+    requires: list[str] = Field(default_factory=list)
+    unless: list[str] = Field(default_factory=list)
+    sets: list[str] = Field(default_factory=list)
+
+
+class TerminalTask(BaseModel):
+    """A scripted terminal scenario. Nothing is executed: commands are matched to rules."""
+
+    hostname: str
+    user: str = "ops"
+    welcome: str = ""
+    max_commands: int | None = Field(default=None, ge=1)  # settings default when unset
+    rules: list[TerminalRule] = Field(min_length=1)
+    # Extra program names that are "installed" but have no scripted output here.
+    extra_commands: list[str] = Field(default_factory=list)
+
+
 class Question(BaseModel):
     id: str
     prompt: str
     look_for: list[str] = Field(default_factory=list)
     coding: CodingTask | None = None
+    terminal: TerminalTask | None = None
+
+    @model_validator(mode="after")
+    def _one_tool(self) -> Question:
+        if self.coding and self.terminal:
+            raise ValueError(f"question {self.id}: use either coding or terminal, not both")
+        if self.terminal:
+            for rule in self.terminal.rules:
+                try:
+                    re.compile(rule.pattern)
+                except re.error as exc:
+                    raise ValueError(
+                        f"question {self.id}: bad terminal pattern {rule.pattern!r}: {exc}"
+                    ) from exc
+        return self
 
 
 class Section(BaseModel):
