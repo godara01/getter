@@ -127,3 +127,38 @@ class RatingOut(BaseModel):
 
 class ReportPending(BaseModel):
     status: str
+
+
+class ProgressPoint(BaseModel):
+    session_id: uuid.UUID
+    date: datetime
+    score: int
+
+
+class SkillProgress(BaseModel):
+    skill_id: str
+    name: str
+    points: list[ProgressPoint]  # oldest first
+    latest: int
+    previous: int | None
+    delta: int | None
+
+
+class RecurringGap(BaseModel):
+    skill_id: str
+    name: str
+    title: str  # title of the most recent learning item for this skill
+    sessions: int  # in how many graded sessions it came up
+
+
+class RoleProgress(BaseModel):
+    template_id: str
+    title: str
+    level: str
+    sessions: int
+    skills: list[SkillProgress]
+    gaps: list[RecurringGap]
+
+
+class ProgressOut(BaseModel):
+    roles: list[RoleProgress]

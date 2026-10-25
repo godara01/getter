@@ -185,6 +185,25 @@ Report views, score-bearing session list views and session deletion write
 minimal actor/action/target audit entries through one helper. Ownership is
 checked before logging; transcript/report deletion retains the audit record.
 
+## Admin tools (implemented)
+
+An admin-only API under `/admin`, plus `python -m getter_api.admin` (see its
+docstring; it needs `GETTER_ADMIN_API_URL` and `GETTER_ADMIN_TOKEN`, or
+`GETTER_ADMIN_EMAIL` in dev). No web page. Unauthenticated calls get 401 and
+non-admins 403. Admin is never self-assignable: it comes from `users.role =
+'admin'` in the database, `GETTER_ADMIN_EMAILS` (dev auth only, since Clerk
+sessions carry no verified email) or `GETTER_ADMIN_CLERK_USER_IDS`.
+
+| Endpoint | What it does |
+| --- | --- |
+| `GET /admin/sessions` | Metadata only (status, cost, tokens, verdict, error), filters `status`, `user_id`, `template_id`, `min_cost_inr`, `max_cost_inr`, `created_after/before`, paging |
+| `GET /admin/sessions/{id}` | Transcript and scores; writes `admin.session.view` |
+| `POST /admin/sessions/{id}/regrade` | For completed, failed or grading sessions: drops the old report, sets `grading`, uses the normal queue or in-process path (same checks, retries and failed state); writes `admin.session.regrade` |
+| `POST /admin/users/{id}/deletion` | Deletes sessions, turns, reports, scores, learning items, consents and the waitlist row; anonymises the user row (no email, name or Clerk id); keeps `llm_calls` cost rows keyed by the anonymous id; writes `admin.user.deletion` with counts only; repeating it is harmless |
+| `GET /admin/audit` | Audit entries, filters `action`, `actor_user_id`, `target_type`, `target_id` |
+
+Audit details never hold emails or transcript text.
+
 ## Grading worker (implemented)
 
 With `GETTER_REDIS_URL` set, session completion enqueues a unique arq job.
@@ -213,6 +232,17 @@ characters. `PUT /sessions/{id}/report/rating` stores one row per report in
 `report_ratings` (sending again edits it); `GET` on the same path returns it
 or null. Only the session owner can use either; the row is deleted with the
 report.
+
+## Progress view (implemented)
+
+`GET /progress` returns the signed-in candidate's own score history, grouped by
+role template and level. Only `completed` sessions with a report count, so a
+failed, abandoned or unfinished interview never adds a point. Each skill lists
+its scores oldest first, plus the latest, the previous and the difference.
+Recurring gaps count in how many graded sessions a skill appeared in the
+learning plan (top five per role). Queries filter by the caller's user id, the
+view is written to the audit log, and nothing here is visible to companies.
+The `/progress` page draws each skill as an inline SVG line; no chart library.
 
 ## Key flows
 
@@ -336,11 +366,11 @@ Each item is sized to be roughly one pull request. Phases 2 to 4 get their own b
 - [ ] Coding section (Monaco editor, sandbox runs) and DevOps section (browser terminal, scripted scenarios first), with snapshots shared with the agent
 - [ ] Grading job: structured scores with evidence, consistency check, report and learning plan
 - [ ] Report page and email: scores, transcript moments, top gaps, learning plan
-- [ ] Progress view across sessions
+- [x] Progress view across sessions
 - [ ] Free-session caps and cost tracking per session
 - [ ] Eval harness: expert-graded transcripts, score comparison on every prompt or rubric change
 - [ ] Paid tier with Razorpay (UPI and cards): more sessions, deeper reports
-- [ ] Admin tools: view sessions, re-run grading, handle deletion requests
+- [x] Admin tools: view sessions, re-run grading, handle deletion requests
 - [ ] Launch to the waitlist; collect report-usefulness ratings
 
 ## What we need before starting
