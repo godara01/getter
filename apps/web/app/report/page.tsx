@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import { ErrorNote } from "@/components/ErrorNote";
 import { RatingWidget } from "@/components/RatingWidget";
 import { useSessionId } from "@/components/useSessionId";
+import { track } from "@/lib/analytics";
 import { ApiError, type Report, VERDICT_LABEL, api } from "@/lib/api";
 
 function ScoreBar({ score, target }: { score: number | null; target: number }) {
@@ -39,6 +40,7 @@ function ReportView() {
           const r = await api.report(id);
           if (r) {
             setReport(r);
+            track("report_viewed", { verdict: r.verdict });
             setPending(false);
             return;
           }

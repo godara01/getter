@@ -215,6 +215,20 @@ calls remain recorded. Without Redis, local/test runs use in-process grading.
 Redis and one worker are additional always-on processes on the existing small
 server, not paid managed services. Compose starts them together.
 
+## Monitoring (implemented, off until keys are set)
+
+Nothing here runs, loads or sends data unless the owner sets a key, so local runs, tests and e2e are unchanged.
+
+| Piece | Switch | Behaviour |
+| --- | --- | --- |
+| API and worker errors | `GETTER_SENTRY_DSN` | `sentry-sdk` is imported only when set. `send_default_pii` off, no local variables, no request bodies, no user object. A `before_send` hook redacts answer, transcript, quote, summary, email and token fields and any JWT, bearer token or email found in strings. Traces are off (`GETTER_SENTRY_TRACES_SAMPLE_RATE=0`). |
+| Request ids and logs | `GETTER_LOG_JSON` (on in `docker-compose.prod.yml`) | Every request gets an `X-Request-Id` (a valid incoming one is kept). One JSON line per request with method, path (no query string), status and duration. Worker jobs log under a `job-...` id. Exceptions log their type and stack, never their message, so an answer inside an error cannot reach the logs. |
+| Browser errors | `NEXT_PUBLIC_SENTRY_DSN` | `@sentry/browser` is fetched as a lazy chunk only when set. No user info, cookies, headers, bodies, query strings, breadcrumbs, tracing or replay, plus the same scrubbing. |
+| Product events | `NEXT_PUBLIC_POSTHOG_KEY` (optional `NEXT_PUBLIC_POSTHOG_HOST`) | `track()` posts to PostHog's capture API with `fetch`, so there is no PostHog SDK. An anonymous random id, no person profiles. Events: `practice_started` (template, level), `interview_completed` (level), `report_viewed` (verdict). Types in `lib/analytics.ts` allow no free text; a runtime guard also drops sensitive keys and values containing `@`. |
+| Opt-out | none needed | Do Not Track and Global Privacy Control are honoured, and a footer link stores an opt-out in the browser. An opted-out visitor loads no SDK and sends nothing. |
+
+The keys are build-time variables for the web app (set them in the Cloudflare Pages build) and runtime variables for the API and worker (`.env.staging`). Both services have free tiers, so cost stays at ₹0 at launch. New dependencies: `sentry-sdk` (API) and `@sentry/browser` (web).
+
 ## Report email and usefulness rating (implemented)
 
 When grading completes, `getter_api.mail` sends the candidate one email with
@@ -352,7 +366,7 @@ Each item is sized to be roughly one pull request. Phases 2 to 4 get their own b
 - [ ] Auth with Clerk on web and API (candidate role first)
 - [ ] Next.js skeleton: landing page, waitlist form, sign-in, empty dashboard
 - [ ] Staging deploys: web on Cloudflare Pages, API on the small server, managed Postgres, storage bucket
-- [ ] Monitoring: Sentry and PostHog in web and API
+- [x] Monitoring: Sentry and PostHog in web and API (code done, inert until the owner creates the projects and sets keys)
 - [ ] Voice spike: a LiveKit room where the model holds a 5 minute spoken conversation; measure latency and cost per minute
 - [ ] Write rubrics and interview templates as YAML for backend (junior to mid) and DevOps/SRE (junior to mid); needs the experts, see prerequisites
 - [ ] Privacy policy, terms and consent text, version 1

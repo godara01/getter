@@ -10,6 +10,7 @@ x-app: &app
     GETTER_ENVIRONMENT: staging
     GETTER_AUTH_MODE: clerk
     GETTER_REDIS_URL: redis://redis:6379/0
+    GETTER_LOG_JSON: "true"
   networks: [backend]
   init: true
   logging:
