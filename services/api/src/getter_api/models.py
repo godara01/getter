@@ -128,6 +128,18 @@ class FeedbackReport(TimestampMixin, Base):
     )
 
 
+class ReportRating(TimestampMixin, Base):
+    """The candidate's 1 to 5 usefulness rating of a report; one per report, editable."""
+
+    __tablename__ = "report_ratings"
+
+    report_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("feedback_reports.id", ondelete="CASCADE"), unique=True
+    )
+    rating: Mapped[int]
+    comment: Mapped[str | None] = mapped_column(String(500))
+
+
 class SkillScore(TimestampMixin, Base):
     __tablename__ = "skill_scores"
 

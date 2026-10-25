@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     grading_consistency_check: bool = True
     consistency_flag_difference: int = 2
 
+    # Report-ready email. An empty key logs instead of sending.
+    resend_api_key: str = ""
+    mail_from: str = "Getter <reports@getter.invalid>"
+    web_base_url: str = "http://localhost:3000"
+
     terms_version: str = "practice-terms-draft-v1"
     waitlist_requests_per_hour: int = 5
 

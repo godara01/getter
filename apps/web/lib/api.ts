@@ -78,6 +78,11 @@ export interface Report {
   created_at: string;
 }
 
+export interface Rating {
+  rating: number;
+  comment: string | null;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -211,6 +216,16 @@ export const api = {
     );
     return status === 202 ? null : (data as Report);
   },
+  /** The candidate's own rating of this report, or null if they have not rated it. */
+  rating: async (id: string) =>
+    (await request<Rating | null>(`/sessions/${id}/report/rating`)).data,
+  rate: async (id: string, rating: number, comment: string) =>
+    (
+      await request<Rating>(`/sessions/${id}/report/rating`, {
+        method: "PUT",
+        body: JSON.stringify({ rating, comment: comment.trim() || null }),
+      })
+    ).data,
   remove: async (id: string) => {
     await request<void>(`/sessions/${id}`, { method: "DELETE" });
   },
