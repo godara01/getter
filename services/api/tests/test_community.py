@@ -29,7 +29,7 @@ async def test_waitlist_validation_deduplication_and_rate_limit(make_client, clo
 
 async def test_signup_session_consents_and_withdrawal(make_client, clock):
     client = await make_client()
-    terms = {"accept_terms": True, "text_version": "practice-terms-draft-v1"}
+    terms = {"accept_terms": True, "text_version": "practice-terms-draft-v2"}
     assert (
         await client.post("/account/terms", headers=ALICE, json={**terms, "accept_terms": False})
     ).status_code == 422

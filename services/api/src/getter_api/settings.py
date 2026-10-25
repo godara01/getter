@@ -3,8 +3,23 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class CreditPack(BaseModel):
+    """A pack of paid interviews. Prices are placeholders until Sanket sets them."""
+
+    id: str
+    title: str
+    credits: int = Field(ge=1)
+    amount_inr: int = Field(ge=1)
+
+
+DEFAULT_PACKS = [
+    CreditPack(id="pack-5", title="5 practice interviews", credits=5, amount_inr=499),
+    CreditPack(id="pack-15", title="15 practice interviews", credits=15, amount_inr=1199),
+]
 
 
 class Settings(BaseSettings):
@@ -59,12 +74,27 @@ class Settings(BaseSettings):
     code_cpus: float = Field(default=0.5, gt=0)
     code_output_limit_bytes: int = Field(default=16384, ge=256)
 
+    # Scripted DevOps terminal: commands allowed per question (a scenario can set fewer).
+    terminal_max_commands: int = Field(default=30, ge=1)
+
+    # Razorpay. Empty keys keep payments off: the API says so and takes no orders.
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
+    razorpay_api_url: str = "https://api.razorpay.com/v1"
+    credit_packs: list[CreditPack] = DEFAULT_PACKS
+
+    # LiveKit, for the voice test. Empty keeps the admin token endpoint off.
+    livekit_url: str = ""
+    livekit_api_key: str = ""
+    livekit_api_secret: str = ""
+
     # Report-ready email. An empty key logs instead of sending.
     resend_api_key: str = ""
     mail_from: str = "Getter <reports@getter.invalid>"
     web_base_url: str = "http://localhost:3000"
 
-    terms_version: str = "practice-terms-draft-v1"
+    terms_version: str = "practice-terms-draft-v2"
     waitlist_requests_per_hour: int = 5
 
     @model_validator(mode="after")

@@ -14,7 +14,7 @@ Plans, goals and progress live in [docs/](docs/README.md):
 ## What works today
 
 - **Text practice interviews** for two launch roles: backend engineer and
-  DevOps/SRE engineer, junior to mid level. Four timed sections each (past
+  DevOps/SRE engineer, junior to mid level. Timed sections each (past
   work, design, debugging or troubleshooting, and a concurrency or incident
   scenario), with follow-up questions when an answer is thin.
 - **Feedback report**: a 1 to 4 score per rubric skill, each backed by quotes
@@ -39,8 +39,21 @@ Plans, goals and progress live in [docs/](docs/README.md):
 
 - **Clerk accounts** with cached JWT verification, plus offline dev email sign-in.
 
-Not yet: voice, code sandbox,
-payments. Staging deployment is prepared; see the [roadmap](docs/roadmap.md) for the order.
+- **Practice terminal for DevOps**: three scripted scenarios (a blocked port, a
+  full disk held by a deleted file, a crashing container) in a browser terminal.
+  Nothing runs for real: commands are matched to scripted output, short pipes
+  work, and state carries across commands. Commands are saved as quotable
+  evidence for the grader.
+- **Paid interview packs** through Razorpay (orders, signed confirmation, webhook,
+  a credit ledger). Off until the Razorpay keys are set. Credits are used only
+  after the free daily limits. Prices are placeholders.
+- **Privacy policy and terms v2** (still draft, pending legal review) and a
+  "Download my data" export.
+- **Voice test kit**: an admin LiveKit token endpoint and a latency and cost
+  scorecard for the phase 0 voice test ([docs/voice-test.md](docs/voice-test.md)).
+
+Not yet: voice interviews, a production code-execution setup, identity checks. Staging deployment
+is prepared; see the [roadmap](docs/roadmap.md) for the order.
 
 - **Prepared staging deployment**: GHCR images, SSH/Compose with Caddy TLS,
   managed Postgres migrations and Cloudflare Pages. Missing secrets skip

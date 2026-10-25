@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from getter_api import billing
 from getter_api.audit import audit
 from getter_api.auth import current_user
 from getter_api.code_runner import CodeRunner, format_result
@@ -20,6 +21,8 @@ from getter_api.models import Consent, FeedbackReport, InterviewSession, ReportR
 from getter_api.schemas import (
     AnswerIn,
     CodingOut,
+    CommandIn,
+    CommandResponse,
     EvidenceOut,
     LearningItemOut,
     Progress,
@@ -36,6 +39,7 @@ from getter_api.schemas import (
     SessionOut,
     SkillScoreOut,
     TemplateOut,
+    TerminalOut,
     TestResultOut,
     TurnOut,
 )
@@ -67,8 +71,19 @@ def session_out(engine: InterviewEngine, s: InterviewSession) -> SessionOut:
     template = engine.template(s.template_id)
     progress = None
     coding = None
+    terminal = None
     if s.status == "in_progress":
-        task = engine.position(s).question.coding
+        question = engine.position(s).question
+        task = question.coding
+        if question.terminal is not None:
+            terminal = TerminalOut(
+                question_id=question.id,
+                hostname=question.terminal.hostname,
+                user=question.terminal.user,
+                welcome=question.terminal.welcome,
+                max_commands=engine.terminal_limit(question.terminal),
+                commands_used=len(engine.terminal_history(s)),
+            )
         if task is not None:
             coding = CodingOut(
                 language=task.language,
@@ -94,12 +109,14 @@ def session_out(engine: InterviewEngine, s: InterviewSession) -> SessionOut:
         ended_at=s.ended_at,
         progress=progress,
         coding=coding,
+        terminal=terminal,
         turns=[
             TurnOut(
                 index=t.index,
                 speaker=t.speaker,
                 kind=t.kind,
                 section_id=t.section_id,
+                question_id=t.question_id,
                 text=t.text,
                 created_at=t.created_at,
             )
@@ -149,7 +166,14 @@ async def create_session(
 ) -> SessionOut:
     if not body.accept_terms:
         raise HTTPException(422, "you need to accept the practice terms to start")
-    await check_free_limits(db, user, engine.settings, engine.clock())
+    try:
+        await check_free_limits(db, user, engine.settings, engine.clock())
+        paid = False
+    except HTTPException as exc:
+        # Over the free limits: a purchased credit still starts the interview.
+        if exc.status_code != 429 or await billing.balance(db, user.id) < 1:
+            raise
+        paid = True
     try:
         session = engine.start(user, body.template_id, body.level)
     except InterviewError as exc:
@@ -164,6 +188,9 @@ async def create_session(
         )
     )
     db.add(session)
+    if paid:
+        await db.flush()  # assigns the session id the ledger entry points to
+        await billing.spend_credit(db, user, session.id)
     await db.commit()
     return session_out(engine, session)
 
@@ -273,6 +300,26 @@ async def run_code(
         ),
         session=session_out(engine, session),
     )
+
+
+@router.post("/sessions/{session_id}/terminal", response_model=CommandResponse)
+async def run_command(
+    session_id: uuid.UUID, body: CommandIn, db: DB, user: CurrentUser, engine: Engine
+) -> CommandResponse:
+    """Run one command in the scripted terminal and save it and its output as turns."""
+    session = await owned_session(db, user, session_id, for_update=True)
+    try:
+        output, _ = engine.run_command(session, body.command)
+    except RunLimitError as exc:
+        raise HTTPException(429, str(exc)) from exc
+    except InterviewError as exc:
+        raise HTTPException(409 if "not in progress" in str(exc) else 422, str(exc)) from exc
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(409, "another change was saved at the same time; reload") from exc
+    return CommandResponse(output=output, session=session_out(engine, session))
 
 
 @router.post("/sessions/{session_id}/end", response_model=SessionOut)

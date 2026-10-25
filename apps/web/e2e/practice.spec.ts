@@ -21,7 +21,7 @@ test("a candidate completes a practice interview and reads the report", async ({
   await page.getByRole("button", { name: "Start interview" }).click();
 
   await expect(page).toHaveURL(/\/interview\/\?id=/);
-  await expect(page.getByTestId("progress")).toContainText("Section 1 of 4");
+  await expect(page.getByTestId("progress")).toContainText("Section 1 of 5");
 
   // A short answer gets a follow-up question.
   await page.getByLabel("Your answer").fill("I ran some servers.");
@@ -31,17 +31,26 @@ test("a candidate completes a practice interview and reads the report", async ({
   );
 
   // Detailed answers move through every question until the interview ends.
+  let usedTerminal = false;
   for (let i = 0; i < 12 && (await page.getByLabel("Your answer").count()) > 0; i++) {
     const before = await page.locator("li[data-speaker]").count();
+    // Scenario questions have a practice terminal; use it once, then answer as usual.
+    if ((await page.getByTestId("terminal").count()) > 0 && !usedTerminal) {
+      await page.getByLabel(/^ops@.*\$$/).fill("help");
+      await page.getByLabel(/^ops@.*\$$/).press("Enter");
+      await expect(page.getByTestId("terminal")).toContainText("simulated terminal");
+      usedTerminal = true;
+    }
     await page.getByLabel("Your answer").fill(ANSWER);
     await page.getByRole("button", { name: "Send answer" }).click();
     // Offline grading can redirect before the final transcript update renders.
     await expect.poll(async () =>
       new URL(page.url()).pathname === "/report/" ||
-      (await page.locator("li[data-speaker]").count()) === before + 2,
+      (await page.locator("li[data-speaker]").count()) >= before + 2,
     ).toBe(true);
   }
 
+  expect(usedTerminal).toBe(true);
   await expect(page).toHaveURL(/\/report\/\?id=/, { timeout: 30_000 });
   await expect(page.getByTestId("verdict")).toBeVisible();
   await expect(page.getByTestId("skill")).toHaveCount(6);

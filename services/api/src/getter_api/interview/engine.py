@@ -14,7 +14,15 @@ from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from getter_api.content import CodingTask, ContentLibrary, Question, Rubric, Section, Template
+from getter_api.content import (
+    CodingTask,
+    ContentLibrary,
+    Question,
+    Rubric,
+    Section,
+    Template,
+    TerminalTask,
+)
 from getter_api.db import as_utc, utcnow
 from getter_api.interview.prompts import PROMPT_VERSION, interviewer_messages
 from getter_api.interview.schemas import InterviewerDecision
@@ -22,6 +30,7 @@ from getter_api.llm.gateway import LLMGateway
 from getter_api.llm.types import AllModelsFailed, CompletionResult
 from getter_api.models import InterviewSession, LLMCall, SessionTurn, User
 from getter_api.settings import Settings
+from getter_api.terminal import CommandRejected, normalize, replay, respond
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +47,7 @@ class InterviewError(Exception):
 
 
 class RunLimitError(InterviewError):
-    """The candidate has used all their code runs for this interview."""
+    """The candidate has used all their code runs or terminal commands for this question."""
 
 
 @dataclass
@@ -244,6 +253,52 @@ class InterviewEngine:
                 section_id=pos.section.id,
                 question_id=pos.question.id,
             )
+
+    def terminal_history(self, session: InterviewSession) -> list[str]:
+        """Commands typed on the current question, oldest first."""
+        question_id = self.position(session).question.id
+        return [
+            t.text for t in session.turns if t.kind == "command" and t.question_id == question_id
+        ]
+
+    def terminal_limit(self, task: TerminalTask) -> int:
+        return task.max_commands or self.settings.terminal_max_commands
+
+    def run_command(self, session: InterviewSession, command: str) -> tuple[str, TerminalTask]:
+        """Run one command in the scenario and save the command and its output as turns.
+
+        Limits are enforced here and not by the UI: the question must have a terminal,
+        section time must be left and the command budget for the question not used up.
+        """
+        if session.status != "in_progress":
+            raise InterviewError("this interview is not in progress")
+        pos = self.position(session)
+        task = pos.question.terminal
+        if task is None:
+            raise InterviewError("the current question has no terminal")
+        try:
+            command = normalize(command)
+        except CommandRejected as exc:
+            raise InterviewError(str(exc)) from exc
+        if self.section_seconds_left(session) == 0:
+            raise InterviewError("time is up for this section; send your answer to move on")
+        history = self.terminal_history(session)
+        if len(history) >= self.terminal_limit(task):
+            raise RunLimitError(f"you have used all {self.terminal_limit(task)} commands")
+        output = respond(task, replay(task, history), command).output
+        for speaker, kind, text in (
+            ("candidate", "command", command),
+            ("interviewer", "command_output", output or "(no output)"),
+        ):
+            self._add_turn(
+                session,
+                speaker=speaker,
+                kind=kind,
+                text=text,
+                section_id=pos.section.id,
+                question_id=pos.question.id,
+            )
+        return output, task
 
     async def answer(self, db: AsyncSession, session: InterviewSession, text: str) -> None:
         """Record the candidate's answer and add the interviewer's next turn."""

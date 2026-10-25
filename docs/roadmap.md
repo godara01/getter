@@ -3,7 +3,7 @@
 Where the build stands and what comes next. The full phase plan and its gates
 are in [product-plan.md](product-plan.md#phased-roadmap) and the detailed work
 breakdown is in [technical-plan.md](technical-plan.md#work-breakdown). Last
-updated 24 October 2026.
+updated 25 October 2026.
 
 ## Phases at a glance
 
@@ -16,6 +16,24 @@ updated 24 October 2026.
 | 4. Revenue on both sides | Paid company plans with a replacement guarantee, paid candidate tiers, more roles, wrapper sold to companies | | Not started |
 
 ## Done
+
+Third batch ([PR #14](https://github.com/godara01/getter/pull/14)), all behind config
+where a key or decision is needed:
+
+- **DevOps practice terminal**: scripted scenario engine (regex rules, flags,
+  short pipes), `POST /sessions/{id}/terminal` with a per-question command budget,
+  and a terminal panel on the interview page.
+- **Three DevOps scenarios**: blocked port 443, full disk held by a deleted
+  file, and a crashing container (a new fifth section). The grader may quote
+  commands, never terminal output.
+- **Razorpay paid packs**: orders at server-side prices, signed confirmation,
+  webhook, an idempotent credit ledger, and credits used after the free limits.
+  Inert until the Razorpay keys are set. Pack prices are placeholders.
+- **Pricing page** with Razorpay Checkout.
+- **Privacy policy and terms v2** (draft, pending legal review), footer links, and
+  `GET /account/export` with a "Download my data" button.
+- **Voice test kit**: admin LiveKit token endpoint and a latency and cost
+  scorecard (`python -m getter_api.voice`); see [voice-test.md](voice-test.md).
 
 Second batch, open as pull requests: progress view across sessions ([#8](https://github.com/godara01/getter/pull/8)); admin tools for re-grading, deletion requests and audit log ([#9](https://github.com/godara01/getter/pull/9)); report-ready email and report usefulness rating ([#10](https://github.com/godara01/getter/pull/10)); Sentry and PostHog monitoring, inert without keys ([#11](https://github.com/godara01/getter/pull/11)); backend coding section with a sandboxed code runner, disabled by default ([#12](https://github.com/godara01/getter/pull/12)).
 
@@ -75,8 +93,13 @@ These block real model choice and going live:
 - [ ] **Resend key and a verified sender domain** to switch on report emails ([#10](https://github.com/godara01/getter/pull/10)).
 - [ ] **Sentry and PostHog projects and keys** to switch on monitoring ([#11](https://github.com/godara01/getter/pull/11)).
 - [ ] **Decide how production runs candidate code**: the Docker runner needs a Docker socket or a separate runner host, so production stays on the disabled runner until then ([#12](https://github.com/godara01/getter/pull/12)).
-- [ ] Later: a LiveKit Cloud project and speech-to-text and text-to-speech
-  accounts, after the voice test.
+- [ ] **Razorpay account and keys** (key id, key secret, webhook secret) to switch on
+  paid packs, and **final pack prices** (the shipped ₹499 for 5 and ₹1,199 for 15
+  are placeholders). Point the Razorpay webhook at `<api>/billing/webhook`.
+- [ ] **A contact email** for privacy and deletion requests
+  (`NEXT_PUBLIC_CONTACT_EMAIL`), and legal review of the new privacy policy.
+- [ ] **A LiveKit Cloud project and speech vendor accounts** to run the voice test
+  with [voice-test.md](voice-test.md); the kit is ready, the call needs your keys.
 
 ## Next up
 
@@ -92,14 +115,21 @@ Roughly in order; each is about one pull request.
    session instead of in the request.
 5. [x] **Landing page and waitlist**, consent records and the audit log.
 6. [x] **Free-session caps** using the per-session cost already tracked.
-7. [ ] **Voice test**: a LiveKit room where the model holds a 5 minute spoken
-   conversation; measure latency and cost per minute, then decide whether to
-   keep LiveKit and which speech vendors to use.
-8. [ ] **Coding and DevOps sections**: backend coding section started in
-   [#12](https://github.com/godara01/getter/pull/12); a browser terminal with
-   scripted scenarios for DevOps is still to do.
-9. [ ] **Razorpay paid tier** for more sessions.
-10. [ ] **Privacy policy, terms and consent text**, version 1.
+7. [ ] **Voice test**: kit built ([PR #14](https://github.com/godara01/getter/pull/14));
+   the five minute call and the keep-or-drop LiveKit decision wait for LiveKit
+   and speech vendor keys.
+8. [x] **Coding and DevOps sections**: backend coding section
+   ([#12](https://github.com/godara01/getter/pull/12)) and the DevOps terminal
+   scenarios ([#14](https://github.com/godara01/getter/pull/14)). Running candidate
+   code in production still needs a decision (see above).
+9. [x] **Razorpay paid tier**, built and inert until keys and prices are set.
+10. [x] **Privacy policy, terms and consent text**, version 1 drafts; legal review
+    still needed before launch.
+
+Candidates for the next batch: more DevOps scenarios and a backend terminal
+scenario (the engine only needs YAML), refunding a credit when grading fails,
+company-side groundwork (phase 3), and the real model choice once keys and
+expert grades exist.
 
 Phase 2 (identity checks and the Electron secure wrapper) gets its own
 breakdown once phase 1 passes its gate.

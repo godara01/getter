@@ -11,6 +11,7 @@ import { useSessionId } from "@/components/useSessionId";
 import { track } from "@/lib/analytics";
 import { ApiError, type Session, api } from "@/lib/api";
 import { formatClock } from "@/lib/text";
+import { inLiveTerminal } from "@/lib/terminal";
 
 const MAX_CHARS = 4000;
 
@@ -18,6 +19,11 @@ const MAX_CHARS = 4000;
 const CodingPanel = dynamic(() => import("@/components/CodingPanel"), {
   ssr: false,
   loading: () => <p className="text-sm text-muted">Loading the editor…</p>,
+});
+
+const TerminalPanel = dynamic(() => import("@/components/TerminalPanel"), {
+  ssr: false,
+  loading: () => <p className="text-sm text-muted">Loading the terminal…</p>,
 });
 
 function Interview() {
@@ -131,7 +137,9 @@ function Interview() {
       </div>
 
       <ol className="space-y-4" aria-label="Interview transcript">
-        {session.turns.map((t) => (
+        {session.turns
+          .filter((t) => !inLiveTerminal(t, session.terminal))
+          .map((t) => (
           <li
             key={t.index}
             data-speaker={t.speaker}
@@ -146,7 +154,11 @@ function Interview() {
                 ? "Your code"
                 : t.kind === "run_result"
                   ? "Test run"
-                  : t.speaker === "candidate"
+                  : t.kind === "command"
+                    ? "Terminal command"
+                    : t.kind === "command_output"
+                      ? "Terminal output"
+                      : t.speaker === "candidate"
                     ? "You"
                     : "Interviewer"}
             </p>
@@ -154,7 +166,7 @@ function Interview() {
               <pre className="overflow-x-auto rounded-md border border-line bg-bg p-3 text-sm">
                 <code>{t.text}</code>
               </pre>
-            ) : t.kind === "run_result" ? (
+            ) : t.kind === "run_result" || t.kind === "command" || t.kind === "command_output" ? (
               <pre className="overflow-x-auto whitespace-pre-wrap text-sm">{t.text}</pre>
             ) : (
               <RichText text={t.text} />
@@ -168,6 +180,14 @@ function Interview() {
 
       {live ? (
         <div className="space-y-2">
+          {session.terminal && (
+            <TerminalPanel
+              sessionId={session.id}
+              terminal={session.terminal}
+              turns={session.turns}
+              onSession={show}
+            />
+          )}
           {session.coding && (
             <CodingPanel sessionId={session.id} coding={session.coding} onSession={show} />
           )}

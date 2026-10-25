@@ -1,5 +1,7 @@
 // Typed client for the Getter API. Types mirror services/api/src/getter_api/schemas.py.
 
+import { TERMS_VERSION } from "./legal";
+
 export type Level = "junior" | "mid";
 
 export interface TemplateSummary {
@@ -15,8 +17,9 @@ export interface TemplateSummary {
 export interface Turn {
   index: number;
   speaker: "interviewer" | "candidate";
-  kind: "intro" | "question" | "follow_up" | "answer" | "closing" | "code" | "run_result";
+  kind: "intro" | "question" | "follow_up" | "answer" | "closing" | "code" | "run_result" | "command" | "command_output";
   section_id: string | null;
+  question_id: string | null;
   text: string;
   created_at: string;
 }
@@ -45,6 +48,15 @@ export interface Session {
     runner_enabled: boolean;
     max_runs: number;
     runs_used: number;
+  } | null;
+  /** Set while the current question has a scripted terminal. */
+  terminal: {
+    question_id: string;
+    hostname: string;
+    user: string;
+    welcome: string;
+    max_commands: number;
+    commands_used: number;
   } | null;
   turns: Turn[];
 }
@@ -94,6 +106,27 @@ export interface Report {
   checked_by: string | null;
   rubric: string;
   created_at: string;
+}
+
+export interface Billing {
+  enabled: boolean;
+  key_id: string;
+  credits: number;
+  packs: { id: string; title: string; credits: number; amount_inr: number }[];
+}
+
+export interface Order {
+  order_id: string;
+  amount_paise: number;
+  currency: string;
+  key_id: string;
+  pack_title: string;
+}
+
+export interface CheckoutResult {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
 }
 
 export interface Rating {
@@ -206,7 +239,7 @@ export const api = {
   consents: async () => (await request<Consent[]>("/consents")).data,
   withdrawConsent: async (id: string) => { await request(`/consents/${id}`, { method: "DELETE" }); },
   acceptTerms: async () => (await request<Consent>("/account/terms", {
-    method: "POST", body: JSON.stringify({ accept_terms: true, text_version: "practice-terms-draft-v1" }),
+    method: "POST", body: JSON.stringify({ accept_terms: true, text_version: TERMS_VERSION }),
   })).data,
   templates: async () => (await request<TemplateSummary[]>("/templates")).data,
   sessions: async () => (await request<SessionListItem[]>("/sessions")).data,
@@ -230,6 +263,26 @@ export const api = {
       await request<{ result: RunResult; session: Session }>(`/sessions/${id}/runs`, {
         method: "POST",
         body: JSON.stringify({ code }),
+      })
+    ).data,
+  command: async (id: string, command: string) =>
+    (
+      await request<{ output: string; session: Session }>(`/sessions/${id}/terminal`, {
+        method: "POST",
+        body: JSON.stringify({ command }),
+      })
+    ).data,
+  /** Everything stored about the signed-in candidate, as the JSON the API returns. */
+  exportData: async () => (await request<unknown>("/account/export")).data,
+  billing: async () => (await request<Billing>("/billing")).data,
+  createOrder: async (pack_id: string) =>
+    (await request<Order>("/billing/orders", { method: "POST", body: JSON.stringify({ pack_id }) }))
+      .data,
+  verifyPayment: async (result: CheckoutResult) =>
+    (
+      await request<{ credits: number; already_applied: boolean }>("/billing/verify", {
+        method: "POST",
+        body: JSON.stringify(result),
       })
     ).data,
   end: async (id: string) =>
