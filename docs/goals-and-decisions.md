@@ -37,6 +37,10 @@ Getter's bar predicts job success.
 | Payments | Razorpay (UPI, cards, netbanking) | 23 Oct 2026 |
 | Voice | LiveKit kept in the plan, to be re-evaluated after a latency and cost test | 23 Oct 2026 |
 | Free practice limits | Admission uses recorded model spend: initially ₹100 per account over 24 hours and ₹300 globally per UTC day, alongside the session-count cap. Configurable operational defaults, not paid-tier pricing; running sessions continue | 24 Oct 2026 |
+| DevOps practice | A scripted terminal, never a real shell: commands are matched to scenario output, so there is nothing to escape from and no per-session cost. Commands are quotable evidence; terminal output is not | 25 Oct 2026 |
+| Paid packs | Razorpay, packs of interviews (credits) rather than a subscription. Credits are used only after the free daily limits. Launch prices (₹499 for 5, ₹1,199 for 15) are placeholders for Sanket to set | 25 Oct 2026 |
+| Privacy | Draft privacy policy and terms v2 in plain language, aimed at India's DPDP Act; candidates can download their data; erasure on request; payment records are kept. Needs legal review before launch | 25 Oct 2026 |
+| Voice test | Built as a kit: LiveKit admin token plus a scorecard. Proposed limits (median 1.5 s, 95th percentile 3 s, ₹10 a minute) are for Sanket to confirm | 25 Oct 2026 |
 | Budget | ₹5,000 to ₹10,000 a month at most; idle cost ₹500 to ₹700 a month; scale up only with real traffic | 23 Oct 2026 |
 | AI models | No lock-in to any one provider, Claude included. A provider-agnostic LLM layer; each task (interview turns, grading, checks) uses the best value-for-money model, chosen by evals | 23 Oct 2026 |
 | Grading rules | Every score quotes the candidate's own words; the verdict is computed in code; no emotion or personality inference; a failed grading produces no score | 23 Oct 2026 |
