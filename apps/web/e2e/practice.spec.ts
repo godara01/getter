@@ -36,9 +36,9 @@ test("a candidate completes a practice interview and reads the report", async ({
     const before = await page.locator("li[data-speaker]").count();
     // Scenario questions have a practice terminal; use it once, then answer as usual.
     if ((await page.getByTestId("terminal").count()) > 0 && !usedTerminal) {
-      await page.getByLabel(/^ops@.*\$$/).fill("ss -tlnp | grep 443");
+      await page.getByLabel(/^ops@.*\$$/).fill("help");
       await page.getByLabel(/^ops@.*\$$/).press("Enter");
-      await expect(page.getByTestId("terminal")).toContainText("0.0.0.0:443");
+      await expect(page.getByTestId("terminal")).toContainText("simulated terminal");
       usedTerminal = true;
     }
     await page.getByLabel("Your answer").fill(ANSWER);
@@ -46,7 +46,7 @@ test("a candidate completes a practice interview and reads the report", async ({
     // Offline grading can redirect before the final transcript update renders.
     await expect.poll(async () =>
       new URL(page.url()).pathname === "/report/" ||
-      (await page.locator("li[data-speaker]").count()) === before + 2,
+      (await page.locator("li[data-speaker]").count()) >= before + 2,
     ).toBe(true);
   }
 

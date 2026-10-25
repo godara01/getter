@@ -22,6 +22,7 @@ from getter_api.llm.config import load_llm_config
 from getter_api.llm.gateway import LLMGateway
 from getter_api.models import InterviewSession
 from getter_api.monitoring import RequestIdMiddleware, configure_logging, init_sentry
+from getter_api.routes.billing import router as billing_router
 from getter_api.routes.community import router as community_router
 from getter_api.routes.progress import router as progress_router
 from getter_api.routes.sessions import router as sessions_router
@@ -88,6 +89,7 @@ def create_app(
         return {"status": "ok"}
 
     app.include_router(sessions_router)
+    app.include_router(billing_router)
     app.include_router(progress_router)
     app.include_router(community_router)
     app.include_router(admin_router)

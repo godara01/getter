@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from getter_api import billing
 from getter_api.audit import audit
 from getter_api.auth import current_user
 from getter_api.code_runner import CodeRunner, format_result
@@ -165,7 +166,14 @@ async def create_session(
 ) -> SessionOut:
     if not body.accept_terms:
         raise HTTPException(422, "you need to accept the practice terms to start")
-    await check_free_limits(db, user, engine.settings, engine.clock())
+    try:
+        await check_free_limits(db, user, engine.settings, engine.clock())
+        paid = False
+    except HTTPException as exc:
+        # Over the free limits: a purchased credit still starts the interview.
+        if exc.status_code != 429 or await billing.balance(db, user.id) < 1:
+            raise
+        paid = True
     try:
         session = engine.start(user, body.template_id, body.level)
     except InterviewError as exc:
@@ -180,6 +188,9 @@ async def create_session(
         )
     )
     db.add(session)
+    if paid:
+        await db.flush()  # assigns the session id the ledger entry points to
+        await billing.spend_credit(db, user, session.id)
     await db.commit()
     return session_out(engine, session)
 

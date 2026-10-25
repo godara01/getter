@@ -215,3 +215,36 @@ class WaitlistAttempt(TimestampMixin, Base):
     __tablename__ = "waitlist_attempts"
 
     ip_hash: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class Payment(TimestampMixin, Base):
+    """One Razorpay order for a pack of interviews. Kept for records even after the
+    candidate's account is deleted, so there is no cascade from users."""
+
+    __tablename__ = "payments"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    pack_id: Mapped[str] = mapped_column(String(64))
+    credits: Mapped[int]
+    amount_paise: Mapped[int]
+    currency: Mapped[str] = mapped_column(String(8), default="INR")
+    razorpay_order_id: Mapped[str] = mapped_column(String(64), unique=True)
+    razorpay_payment_id: Mapped[str | None] = mapped_column(String(64), unique=True)
+    # created, paid
+    status: Mapped[str] = mapped_column(String(16), default="created")
+    paid_at: Mapped[datetime | None]
+
+
+class CreditEntry(TimestampMixin, Base):
+    """Interview credits as a ledger: purchases add, starting a paid interview subtracts.
+    The balance is the sum. One entry per payment (unique) makes granting idempotent."""
+
+    __tablename__ = "credit_entries"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    delta: Mapped[int]
+    reason: Mapped[str] = mapped_column(String(32))  # purchase, interview
+    payment_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("payments.id"), unique=True)
+    session_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sessions.id", ondelete="SET NULL")
+    )
