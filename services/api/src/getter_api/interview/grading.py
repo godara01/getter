@@ -15,6 +15,7 @@ from typing import Any, Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from getter_api import billing
 from getter_api.content import ContentLibrary, Rubric, Template
 from getter_api.interview.engine import record_calls
 from getter_api.interview.prompts import PROMPT_VERSION, grader_messages
@@ -182,6 +183,7 @@ class Grader:
                 raise
             session.status = "failed"
             session.error = f"grading failed: {exc}"[:2000]
+            await billing.refund_credit(db, session.id)
             await db.commit()
             return
 

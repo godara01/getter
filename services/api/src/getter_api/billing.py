@@ -128,3 +128,27 @@ async def spend_credit(db: AsyncSession, user: User, session_id: uuid.UUID) -> b
         return False
     db.add(CreditEntry(user_id=user.id, delta=-1, reason="interview", session_id=session_id))
     return True
+
+
+async def refund_credit(db: AsyncSession, session_id: uuid.UUID) -> bool:
+    """Give back the credit a paid interview used, when grading failed and no score exists.
+
+    True when a credit was returned. Free interviews have no credit entry, so they are
+    left alone, and a session is refunded at most once however often this is called."""
+    entries = list(
+        await db.scalars(
+            select(CreditEntry).where(
+                CreditEntry.session_id == session_id,
+                CreditEntry.reason.in_(("interview", "refund")),
+            )
+        )
+    )
+    spent = next((e for e in entries if e.reason == "interview"), None)
+    if spent is None or any(e.reason == "refund" for e in entries):
+        return False
+    db.add(
+        CreditEntry(
+            user_id=spent.user_id, delta=-spent.delta, reason="refund", session_id=session_id
+        )
+    )
+    return True

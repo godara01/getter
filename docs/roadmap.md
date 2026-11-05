@@ -3,7 +3,7 @@
 Where the build stands and what comes next. The full phase plan and its gates
 are in [product-plan.md](product-plan.md#phased-roadmap) and the detailed work
 breakdown is in [technical-plan.md](technical-plan.md#work-breakdown). Last
-updated 25 October 2026.
+updated 5 November 2026.
 
 ## Phases at a glance
 
@@ -16,6 +16,17 @@ updated 25 October 2026.
 | 4. Revenue on both sides | Paid company plans with a replacement guarantee, paid candidate tiers, more roles, wrapper sold to companies | | Not started |
 
 ## Done
+
+Fourth batch (PR pending): scripted-terminal content and a fairer paid tier.
+
+- **Credit refund on failed grading**: when grading fails for good, the credit a
+  paid interview used goes back to the candidate once, and shows in the ledger and
+  the data export as `refund`. Free interviews are untouched.
+- **Two more DevOps scenarios**: a 502 from nginx because the app crashed on
+  startup, and an expired TLS certificate where renewal needs port 80 freed.
+  DevOps template is now version 2 (linux section 15 min, incident 12 min).
+- **First backend terminal scenario**: a 500 on `POST /orders` after a release whose
+  migration never ran. Backend template is now version 3 (debugging 14 min).
 
 Third batch ([PR #14](https://github.com/godara01/getter/pull/14)), all behind config
 where a key or decision is needed:
@@ -126,8 +137,7 @@ Roughly in order; each is about one pull request.
 10. [x] **Privacy policy, terms and consent text**, version 1 drafts; legal review
     still needed before launch.
 
-Candidates for the next batch: more DevOps scenarios and a backend terminal
-scenario (the engine only needs YAML), refunding a credit when grading fails,
+Candidates for the next batch: more scenarios (the engine only needs YAML),
 company-side groundwork (phase 3), and the real model choice once keys and
 expert grades exist.
 

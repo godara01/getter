@@ -39,13 +39,15 @@ Plans, goals and progress live in [docs/](docs/README.md):
 
 - **Clerk accounts** with cached JWT verification, plus offline dev email sign-in.
 
-- **Practice terminal for DevOps**: three scripted scenarios (a blocked port, a
-  full disk held by a deleted file, a crashing container) in a browser terminal.
+- **Practice terminal for DevOps**: five scripted scenarios (a blocked port, a
+  full disk held by a deleted file, a 502 from nginx, a crashing container, an
+  expired TLS certificate) and one for backend (a 500 after a missed migration)
+  in a browser terminal.
   Nothing runs for real: commands are matched to scripted output, short pipes
   work, and state carries across commands. Commands are saved as quotable
   evidence for the grader.
 - **Paid interview packs** through Razorpay (orders, signed confirmation, webhook,
-  a credit ledger). Off until the Razorpay keys are set. Credits are used only
+  a credit ledger; a credit is returned if grading fails). Off until the Razorpay keys are set. Credits are used only
   after the free daily limits. Prices are placeholders.
 - **Privacy policy and terms v2** (still draft, pending legal review) and a
   "Download my data" export.

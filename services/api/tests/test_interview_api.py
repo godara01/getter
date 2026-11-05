@@ -148,7 +148,7 @@ async def test_section_time_limit_is_enforced_in_code(make_client: Any, clock: F
     # Debugging has two questions; running out of time skips the second.
     session = await answer(client, session["id"], LONG_ANSWER)
     assert session["turns"][-1]["section_id"] == "debugging"
-    clock.advance(minutes=8)
+    clock.advance(minutes=14)
     session = await answer(client, session["id"], LONG_ANSWER)
     assert session["turns"][-1]["section_id"] == "concurrency"
 

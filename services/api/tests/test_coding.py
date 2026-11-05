@@ -45,7 +45,7 @@ async def coding_client(make_client: Any, runner: Any = None, **overrides: Any) 
 
 async def to_coding(client: httpx.AsyncClient) -> dict[str, Any]:
     session = await start(client)
-    for _ in range(5):  # one answer for each earlier question
+    for _ in range(6):  # one answer for each earlier question
         session = await answer(client, session["id"], LONG_ANSWER)
     assert session["progress"]["section_title"] == "Coding task"
     return session
@@ -165,11 +165,11 @@ async def test_run_input_and_ownership_checks(make_client: Any) -> None:
 
 
 async def test_code_snapshots_do_not_use_up_the_answer_limit(make_client: Any) -> None:
-    client = await coding_client(make_client, max_candidate_turns=7)
+    client = await coding_client(make_client, max_candidate_turns=8)
     session = await to_coding(client)
     for _ in range(3):
         await run(client, session["id"])
-    # Six answers so far: a short one still gets its follow-up instead of an early end.
+    # Seven answers so far: a short one still gets its follow-up instead of an early end.
     session = await answer(client, session["id"], "ok")
     assert session["status"] == "in_progress"
     assert session["turns"][-1]["kind"] == "follow_up"

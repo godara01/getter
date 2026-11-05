@@ -1,14 +1,14 @@
 id: backend-junior-mid
-version: 2
+version: 3
 title: Backend engineer practice interview
 rubric: backend-junior-mid
 levels: [junior, mid]
 intro: >-
   Hi, I'm your practice interviewer for a backend engineer role. We'll go
   through five short sections: your own past work, a small API and database
-  design, a debugging exercise, a concurrency question, and a short coding
-  task. Answer in your own
-  words, the way you would in a real interview. Nothing here is shared with
+  design, debugging (one question comes with a practice terminal), a
+  concurrency question, and a short coding task. Answer in your own words,
+  the way you would in a real interview. Nothing here is shared with
   companies.
 sections:
   - id: past_work
@@ -46,7 +46,7 @@ sections:
           - Validation of the target URL and handling duplicates
   - id: debugging
     title: Debugging
-    time_limit_minutes: 8
+    time_limit_minutes: 14
     max_followups: 2
     skills: [debugging, coding_fundamentals]
     questions:
@@ -74,6 +74,76 @@ sections:
           - Names the N+1 query problem
           - Fix with a join or eager loading, and checks the query plan or indexes
           - Measures before and after
+      - id: orders_500
+        prompt: >-
+          Since this morning's release, `POST /orders` returns 500 for some
+          customers but not others. You have a shell on the API host. Use the
+          terminal to find the cause, then tell me what is wrong, how you fix
+          it, and how you would have caught it before release.
+        look_for:
+          - Reads the application log and the failing request's stack trace before guessing
+          - Connects the error to the release (a migration that did not run, a missing column) and checks the database schema
+          - Fixes forward or rolls back deliberately, runs the migration safely, and adds a deploy check or test for it
+        terminal:
+          hostname: api-01
+          user: dev
+          welcome: "Type commands; nothing runs for real."
+          rules:
+            - pattern: '(tail|cat)( -[a-zA-Z0-9]+)*( [0-9]+)? /var/log/orders-api/app\.log'
+              output: |-
+                09:41:07 INFO  POST /orders 201 user=1042
+                09:41:19 ERROR POST /orders 500 user=1187
+                sqlalchemy.exc.ProgrammingError: column "gift_message" of relation "orders" does not exist
+                09:42:03 ERROR POST /orders 500 user=1190
+                sqlalchemy.exc.ProgrammingError: column "gift_message" of relation "orders" does not exist
+            - pattern: '(grep|tail|cat).*(app\.log|error).*'
+              output: |-
+                09:41:19 ERROR POST /orders 500 user=1187
+                sqlalchemy.exc.ProgrammingError: column "gift_message" of relation "orders" does not exist
+            - pattern: 'git (log|show)( .*)?'
+              output: |-
+                4be19d2 Add optional gift message to orders (migration 0042)
+                a03c6f1 Fix rounding in tax totals
+            - pattern: '(alembic|flask db|python manage\.py showmigrations)( current| history| status)?'
+              unless: [migrated]
+              output: |-
+                Current revision: 0041
+                Head revision:    0042 (pending)
+            - pattern: '(alembic|flask db|python manage\.py showmigrations)( current| history| status)?'
+              requires: [migrated]
+              output: |-
+                Current revision: 0042 (head)
+            - pattern: '(alembic upgrade head|flask db upgrade|python manage\.py migrate)'
+              unless: [migrated]
+              sets: [migrated]
+              output: |-
+                Running upgrade 0041 -> 0042, add gift_message to orders
+            - pattern: '(alembic upgrade head|flask db upgrade|python manage\.py migrate)'
+              requires: [migrated]
+              output: "Nothing to do: already at head."
+            - pattern: 'psql .*'
+              unless: [migrated]
+              output: |-
+                Column      | Type
+                id          | bigint
+                user_id     | bigint
+                total_paise | integer
+            - pattern: 'psql .*'
+              requires: [migrated]
+              output: |-
+                Column        | Type
+                id            | bigint
+                user_id       | bigint
+                total_paise   | integer
+                gift_message  | text
+            - pattern: 'curl( -[a-zA-Z]+)* (-X POST )?.*/orders.*'
+              unless: [migrated]
+              output: "HTTP/1.1 500 Internal Server Error"
+            - pattern: 'curl( -[a-zA-Z]+)* (-X POST )?.*/orders.*'
+              requires: [migrated]
+              output: "HTTP/1.1 201 Created"
+            - pattern: 'systemctl (status|restart) orders-api'
+              output: "orders-api.service: active (running)"
   - id: concurrency
     title: Correctness under load
     time_limit_minutes: 8

@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 from typing import Any
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
@@ -243,3 +244,64 @@ async def test_razorpay_client_posts_to_the_orders_endpoint() -> None:
     )
     with pytest.raises(PaymentsUnavailableError):
         await failing.create_order(100, "r", {})
+
+
+async def paid_session(make_client: Any) -> tuple[Any, str]:
+    """A client whose second interview of the day used a purchased credit."""
+    client = await billing_client(make_client, free_sessions_per_day=1)
+    await verify(client, (await order(client)).json()["order_id"])
+    await start(client)  # free
+    return client, (await start(client))["id"]  # paid
+
+
+async def fail_grading(client: Any, session_id: str) -> None:
+    import uuid
+
+    from getter_api.models import InterviewSession
+    from getter_api.worker import MAX_TRIES, grade_session
+
+    app = client._transport.app
+    async with app.state.sessionmaker() as db:
+        row = await db.get(InterviewSession, uuid.UUID(session_id))
+        row.status = "grading"
+        await db.commit()
+    grader = AsyncMock()
+    grader.grade.side_effect = RuntimeError("provider unavailable")
+    ctx = {"sessionmaker": app.state.sessionmaker, "grader": grader, "job_try": MAX_TRIES}
+    await grade_session(ctx, session_id)
+
+
+async def test_failed_grading_refunds_a_paid_credit_once(make_client: Any) -> None:
+    client, sid = await paid_session(make_client)
+    assert (await client.get("/billing", headers=ALICE)).json()["credits"] == 4
+    await fail_grading(client, sid)
+    await fail_grading(client, sid)  # e.g. an admin re-grade that fails again
+    assert (await client.get("/billing", headers=ALICE)).json()["credits"] == 5
+    app = client._transport.app
+    async with app.state.sessionmaker() as db:
+        reasons = list(
+            await db.scalars(select(CreditEntry.reason).order_by(CreditEntry.created_at))
+        )
+    assert reasons == ["purchase", "interview", "refund"]
+
+
+async def test_failed_grading_of_a_free_interview_adds_no_credit(make_client: Any) -> None:
+    client = await billing_client(make_client)
+    await verify(client, (await order(client)).json()["order_id"])
+    sid = (await start(client))["id"]
+    await fail_grading(client, sid)
+    assert (await client.get("/billing", headers=ALICE)).json()["credits"] == 5
+
+
+async def test_refund_credit_is_idempotent(make_client: Any) -> None:
+    from getter_api.billing import refund_credit
+
+    client, sid = await paid_session(make_client)
+    import uuid
+
+    app = client._transport.app
+    async with app.state.sessionmaker() as db:
+        assert await refund_credit(db, uuid.UUID(sid)) is True
+        assert await refund_credit(db, uuid.UUID(sid)) is False
+        await db.commit()
+    assert (await client.get("/billing", headers=ALICE)).json()["credits"] == 5
