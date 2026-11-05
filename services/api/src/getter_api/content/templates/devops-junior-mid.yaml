@@ -1,5 +1,5 @@
 id: devops-junior-mid
-version: 1
+version: 2
 title: DevOps and SRE practice interview
 rubric: devops-junior-mid
 levels: [junior, mid]
@@ -28,7 +28,7 @@ sections:
           - What went wrong, what they did, and what changed afterwards
   - id: linux
     title: Linux troubleshooting
-    time_limit_minutes: 10
+    time_limit_minutes: 15
     max_followups: 2
     skills: [linux_networking]
     questions:
@@ -173,6 +173,76 @@ sections:
             - pattern: 'cat /etc/logrotate\.d/app'
               output: |-
                 # no rotation configured for /var/log/app
+      - id: nginx_502
+        prompt: >-
+          Users get a 502 Bad Gateway from the website since the last
+          release, but the server itself is up. Use the terminal to find out
+          why, then tell me the cause and how you fix it without making things
+          worse.
+        look_for:
+          - Checks the proxy error log and whether the upstream is listening before changing config
+          - Finds the upstream process down or on a different port, from evidence
+          - Validates config (nginx -t) before reloading, and confirms with a request afterwards
+        terminal:
+          hostname: web-03
+          welcome: "Type commands; nothing runs for real."
+          rules:
+            - pattern: 'curl( -[a-zA-Z]+)* (https?://)?(localhost|127\.0\.0\.1|web-03)(:80)?/?'
+              unless: [app_running]
+              output: |-
+                HTTP/1.1 502 Bad Gateway
+                Server: nginx/1.24.0
+            - pattern: 'curl( -[a-zA-Z]+)* (https?://)?(localhost|127\.0\.0\.1|web-03)(:80)?/?'
+              requires: [app_running]
+              output: |-
+                HTTP/1.1 200 OK
+                Server: nginx/1.24.0
+            - pattern: 'curl( -[a-zA-Z]+)* (https?://)?(localhost|127\.0\.0\.1):8080/?.*'
+              unless: [app_running]
+              output: "curl: (7) Failed to connect to localhost port 8080: Connection refused"
+            - pattern: 'curl( -[a-zA-Z]+)* (https?://)?(localhost|127\.0\.0\.1):8080/?.*'
+              requires: [app_running]
+              output: "HTTP/1.1 200 OK"
+            - pattern: '(tail|cat)( -[a-zA-Z0-9]+)*( [0-9]+)? /var/log/nginx/error\.log'
+              output: |-
+                2026/10/27 09:14:02 [error] 812#812: *4411 connect() failed (111: Connection refused) while connecting to upstream, upstream: "http://127.0.0.1:8080/"
+                2026/10/27 09:14:03 [error] 812#812: *4412 connect() failed (111: Connection refused) while connecting to upstream, upstream: "http://127.0.0.1:8080/"
+            - pattern: 'ss( -[a-z]+)*'
+              unless: [app_running]
+              output: |-
+                State   Local Address:Port  Process
+                LISTEN  0.0.0.0:80          users:(("nginx",pid=812))
+                LISTEN  0.0.0.0:22          users:(("sshd",pid=611))
+            - pattern: 'ss( -[a-z]+)*'
+              requires: [app_running]
+              output: |-
+                State   Local Address:Port  Process
+                LISTEN  0.0.0.0:80          users:(("nginx",pid=812))
+                LISTEN  127.0.0.1:8080      users:(("gunicorn",pid=3390))
+            - pattern: 'systemctl status (shop|shop\.service)'
+              unless: [app_running]
+              output: |-
+                shop.service - Shop web app
+                   Active: failed (Result: exit-code) since Tue 09:12:40
+                  Process: 3302 ExecStart=/opt/shop/bin/gunicorn (code=exited, status=3)
+            - pattern: 'systemctl status (shop|shop\.service)'
+              requires: [app_running]
+              output: |-
+                shop.service - Shop web app
+                   Active: active (running) since Tue 09:16:11
+            - pattern: 'journalctl -u shop( .*)?'
+              output: |-
+                Oct 27 09:12:40 web-03 gunicorn[3302]: ModuleNotFoundError: No module named 'shop.settings_prod'
+                Oct 27 09:12:40 web-03 systemd[1]: shop.service: Main process exited, code=exited, status=3
+            - pattern: 'nginx -t'
+              output: |-
+                nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+                nginx: configuration file /etc/nginx/nginx.conf test is successful
+            - pattern: '(systemctl (reload|restart) nginx|nginx -s reload)'
+              output: ""
+            - pattern: '(systemctl (restart|start) shop(\.service)?)'
+              output: ""
+              sets: [app_running]
   - id: containers_ci
     title: Containers and CI
     time_limit_minutes: 8
@@ -252,7 +322,7 @@ sections:
                 Mem:    7.8Gi  2.1Gi  4.9Gi
   - id: incident
     title: An incident
-    time_limit_minutes: 8
+    time_limit_minutes: 12
     max_followups: 2
     skills: [incident_response, reliability_practices]
     questions:
@@ -273,3 +343,71 @@ sections:
           - Mitigates first by rolling back the deploy, and communicates
           - Links the deploy to the pool exhaustion (leaked connections, slower query, lower pool size)
           - Uses metrics and the diff to confirm the cause; adds an alert or test so it doesn't recur
+      - id: cert_expired
+        prompt: >-
+          Monitoring says the API's TLS certificate expired this morning and
+          mobile clients are failing. Use the terminal to confirm what is
+          wrong, tell me how you renew it, and what you change so it does not
+          happen again.
+        look_for:
+          - Confirms the expiry date from the certificate itself (openssl or curl -v), not by assumption
+          - Finds why automatic renewal stopped (a failed timer or challenge) and renews, then reloads the server
+          - Adds expiry alerting well ahead of the date and tests renewal with a dry run
+        terminal:
+          hostname: api-01
+          welcome: "Type commands; nothing runs for real."
+          rules:
+            - pattern: 'openssl s_client .*|echo \| openssl s_client .*'
+              unless: [cert_renewed]
+              output: |-
+                depth=0 CN = api.example.com
+                verify error:num=10:certificate has expired
+                notAfter=Oct 27 03:12:09 2026 GMT
+            - pattern: 'openssl s_client .*|echo \| openssl s_client .*'
+              requires: [cert_renewed]
+              output: |-
+                depth=0 CN = api.example.com
+                Verification: OK
+                notAfter=Jan 25 06:40:51 2027 GMT
+            - pattern: 'curl( -[a-zA-Z]+)* https://api\.example\.com/?.*'
+              unless: [cert_renewed]
+              output: "curl: (60) SSL certificate problem: certificate has expired"
+            - pattern: 'curl( -[a-zA-Z]+)* https://api\.example\.com/?.*'
+              requires: [cert_renewed]
+              output: "HTTP/2 200"
+            - pattern: 'certbot certificates'
+              output: |-
+                Certificate Name: api.example.com
+                  Expiry Date: 2026-10-27 03:12:09+00:00 (INVALID: EXPIRED)
+            - pattern: 'certbot renew --dry-run'
+              unless: [port_80_free]
+              output: |-
+                Failed to renew certificate api.example.com: Could not bind TCP port 80 because it is already in use
+            - pattern: 'certbot renew --dry-run'
+              requires: [port_80_free]
+              output: "Congratulations, all simulated renewals succeeded."
+            - pattern: 'certbot renew( --[a-z-]+)*'
+              unless: [port_80_free]
+              output: |-
+                Failed to renew certificate api.example.com: Could not bind TCP port 80 because it is already in use
+            - pattern: 'certbot renew( --[a-z-]+)*'
+              requires: [port_80_free]
+              sets: [cert_renewed]
+              output: "Congratulations, all renewals succeeded. Certificate saved; reload your server to use it."
+            - pattern: 'systemctl (list-timers|status certbot\.timer)( .*)?'
+              output: |-
+                certbot.timer: disabled, inactive since Mon 2026-08-03
+            - pattern: '(ss|netstat)( -[a-z]+)*'
+              unless: [port_80_free]
+              output: |-
+                LISTEN  0.0.0.0:80   users:(("haproxy",pid=2001))
+                LISTEN  0.0.0.0:443  users:(("haproxy",pid=2001))
+            - pattern: '(ss|netstat)( -[a-z]+)*'
+              requires: [port_80_free]
+              output: "State   Local Address:Port  Process"
+            - pattern: '(systemctl stop haproxy|service haproxy stop)'
+              unless: [cert_renewed]
+              sets: [port_80_free]
+              output: ""
+            - pattern: '(systemctl (reload|restart) haproxy|systemctl enable --now certbot\.timer)'
+              output: ""

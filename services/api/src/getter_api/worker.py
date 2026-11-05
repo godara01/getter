@@ -12,6 +12,7 @@ from arq.connections import RedisSettings
 from fastapi import BackgroundTasks, Request
 from sqlalchemy import select
 
+from getter_api import billing
 from getter_api.content import library
 from getter_api.db import make_engine, make_sessionmaker
 from getter_api.interview.grading import Grader
@@ -61,6 +62,7 @@ async def _grade_session(ctx: dict[str, Any], session_id: str) -> None:
             if session is not None and session.status == "grading":
                 session.status = "failed"
                 session.error = "Grading failed after three attempts; no score was produced."
+                await billing.refund_credit(db, session.id)
                 await db.commit()
 
 

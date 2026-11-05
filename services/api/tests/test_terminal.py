@@ -19,15 +19,24 @@ from tests.conftest import FakeClock
 from tests.test_interview_api import ALICE, BOB, LONG_ANSWER, answer, start
 
 DEVOPS = "devops-junior-mid"
+BACKEND = "backend-junior-mid"
 
 
 def task(question_id: str) -> Any:
-    for section in library().templates[DEVOPS].sections:
+    for template_id in (DEVOPS, BACKEND):
+        found = _find(template_id, question_id)
+        if found is not None:
+            return found
+    raise KeyError(question_id)
+
+
+def _find(template_id: str, question_id: str) -> Any:
+    for section in library().templates[template_id].sections:
         for q in section.questions:
             if q.id == question_id:
                 assert q.terminal is not None
                 return q.terminal
-    raise KeyError(question_id)
+    return None
 
 
 def out(question_id: str, command: str, flags: frozenset[str] = frozenset()) -> str:
@@ -100,13 +109,64 @@ def test_every_scenario_can_reach_its_fix() -> None:
     )
 
 
+def test_nginx_502_scenario_reaches_its_fix() -> None:
+    t = task("nginx_502")
+    assert "502" in respond(t, frozenset(), "curl -I localhost").output
+    assert "Connection refused" in respond(t, frozenset(), "tail /var/log/nginx/error.log").output
+    assert "status=3" in respond(t, frozenset(), "systemctl status shop").output
+    flags = replay(t, ["journalctl -u shop", "systemctl restart shop"])
+    assert flags == {"app_running"}
+    assert "200 OK" in respond(t, flags, "curl -I localhost").output
+    assert "gunicorn" in respond(t, flags, "ss -tlnp").output
+
+
+def test_cert_expired_scenario_needs_port_80_freed_before_renewal() -> None:
+    t = task("cert_expired")
+    assert "expired" in respond(t, frozenset(), "curl https://api.example.com/").output
+    assert "port 80" in respond(t, frozenset(), "certbot renew").output
+    assert replay(t, ["certbot renew"]) == set()
+    flags = replay(t, ["systemctl stop haproxy", "certbot renew"])
+    assert flags == {"port_80_free", "cert_renewed"}
+    assert "200" in respond(t, flags, "curl https://api.example.com/").output
+    assert (
+        "Verification: OK"
+        in respond(t, flags, "openssl s_client -connect api.example.com:443").output
+    )
+    assert "disabled" in respond(t, frozenset(), "systemctl list-timers").output
+
+
+def test_backend_orders_500_scenario_reaches_its_fix() -> None:
+    t = task("orders_500")
+    assert (
+        "gift_message" in respond(t, frozenset(), "tail -n 50 /var/log/orders-api/app.log").output
+    )
+    assert "pending" in respond(t, frozenset(), "alembic current").output
+    assert "500" in respond(t, frozenset(), "curl -X POST localhost:8000/orders").output
+    flags = replay(t, ["alembic upgrade head"])
+    assert flags == {"migrated"}
+    assert "201" in respond(t, flags, "curl -X POST localhost:8000/orders").output
+    assert "head" in respond(t, flags, "alembic current").output
+
+
 # -- content ---------------------------------------------------------------
 
 
 def test_devops_template_has_terminal_scenarios() -> None:
     template = library().templates[DEVOPS]
     ids = [q.id for s in template.sections for q in s.questions if q.terminal]
-    assert ids == ["port_443", "disk_full", "container_restarting"]
+    assert ids == [
+        "port_443",
+        "disk_full",
+        "nginx_502",
+        "container_restarting",
+        "cert_expired",
+    ]
+
+
+def test_backend_template_has_a_terminal_scenario() -> None:
+    template = library().templates[BACKEND]
+    ids = [q.id for s in template.sections for q in s.questions if q.terminal]
+    assert ids == ["orders_500"]
 
 
 def test_question_cannot_have_both_code_and_terminal() -> None:

@@ -236,14 +236,15 @@ class Payment(TimestampMixin, Base):
 
 
 class CreditEntry(TimestampMixin, Base):
-    """Interview credits as a ledger: purchases add, starting a paid interview subtracts.
+    """Interview credits as a ledger: purchases add, starting a paid interview subtracts,
+    a failed grading gives the credit back.
     The balance is the sum. One entry per payment (unique) makes granting idempotent."""
 
     __tablename__ = "credit_entries"
 
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     delta: Mapped[int]
-    reason: Mapped[str] = mapped_column(String(32))  # purchase, interview
+    reason: Mapped[str] = mapped_column(String(32))  # purchase, interview, refund
     payment_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("payments.id"), unique=True)
     session_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("sessions.id", ondelete="SET NULL")
